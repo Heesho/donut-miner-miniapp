@@ -1,73 +1,126 @@
-"use client"
+"use client";
 
-import { useEffect, useMemo, useState } from "react"
-import { sdk } from "@farcaster/miniapp-sdk"
-import { useAccount } from "wagmi"
-import { useMinerState } from "@/hooks/useMinerState"
-import GlazePanel from "@/components/GlazePanel"
+import { useEffect } from "react";
+import { CircleUserRound } from "lucide-react";
+import { sdk } from "@farcaster/miniapp-sdk";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 
-export default function Page() {
+export default function HomePage() {
   useEffect(() => {
-    sdk.back.enableWebNavigation().catch(() => {})
-  }, [])
-
-  useEffect(() => {
-    ;(async () => {
-      await sdk.actions.ready()
-    })()
-  }, [])
-
-  const { address } = useAccount()
-  const { data, isLoading } = useMinerState(address)
-  const [user, setUser] = useState<{ username?: string; displayName?: string; pfpUrl?: string }>()
-
-  useEffect(() => {
-    let cancelled = false
-    sdk.context
-      .then((ctx) => {
-        if (!cancelled) {
-          setUser({
-            username: ctx.user?.username,
-            displayName: ctx.user?.displayName,
-            pfpUrl: ctx.user?.pfpUrl,
-          })
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setUser(undefined)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
-  const uriSuggestion = useMemo(() => {
-    const obj = {
-      username: user?.username,
-      displayName: user?.displayName,
-      pfpUrl: user?.pfpUrl,
-    }
-    try {
-      return JSON.stringify(obj)
-    } catch {
-      return "{}"
-    }
-  }, [user])
+    sdk.actions.ready().catch(() => {
+      // Ignore errors during local development where the SDK may be unavailable.
+    });
+  }, []);
 
   return (
-    <GlazePanel
-      user={user ?? undefined}
-      epochId={data?.epochId ?? 0}
-      timeLeft={data?.timeLeft ?? 0}
-      dps={data?.dps ?? 0}
-      nextDps={data?.nextDps ?? 0}
-      priceWei={(data?.price as unknown as bigint) ?? BigInt(0)}
-      currentMiner={data?.miner ?? "0x0000000000000000000000000000000000000000"}
-      currentMinerUri={data?.uri ?? null}
-      accrued={data?.accrued ?? 0}
-      donutsHeld={data?.donutsOfAccount ?? 0}
-      uriSuggestion={uriSuggestion}
-      isLoading={isLoading}
-    />
-  )
+    <main className="grid h-screen w-screen place-items-center overflow-hidden bg-black font-mono text-white">
+      <div className="relative flex h-[95vh] w-full max-w-[520px] flex-col justify-between rounded-[28px] border border-zinc-800 bg-black p-3 shadow-inner">
+        <div>
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold tracking-wide">DONUT MINER</h1>
+            <div className="flex items-center gap-2 rounded-full bg-black px-3 py-1">
+              <Avatar className="h-8 w-8 border border-zinc-800">
+                <AvatarFallback className="bg-zinc-800 text-white">
+                  <CircleUserRound className="h-4 w-4" />
+                </AvatarFallback>
+              </Avatar>
+              <div className="leading-tight text-left">
+                <div className="text-sm font-bold">heeshillio</div>
+                <div className="text-xs text-gray-400">@heesh</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <Card className="border-zinc-800 bg-black">
+              <CardContent className="grid gap-2 p-3">
+                <div className="text-sm font-bold uppercase text-gray-400">
+                  KING GLAZER
+                </div>
+                <div className="flex items-center gap-2">
+                  <Avatar className="h-8 w-8 border border-zinc-800">
+                    <AvatarFallback className="bg-zinc-800 text-white text-xs uppercase">
+                      fz
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="leading-tight text-left">
+                    <div className="text-sm text-white">fuzboy</div>
+                    <div className="text-[11px] text-gray-400">@fuzy</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-zinc-800 bg-black">
+              <CardContent className="grid gap-2 p-3">
+                <div className="text-sm font-bold uppercase text-gray-400">
+                  GLAZED
+                </div>
+                <div className="text-2xl font-semibold text-white">🍩535</div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="my-12 flex justify-center select-none text-[12rem] leading-none">
+            🍩
+          </div>
+        </div>
+
+        <div className="mb-2 flex flex-col gap-3">
+          <div className="grid grid-cols-2 gap-2">
+            <Card className="border-zinc-800 bg-black">
+              <CardContent className="grid gap-2 p-3">
+                <div className="text-sm font-bold uppercase text-gray-400">
+                  GLAZE RATE
+                </div>
+                <div className="flex items-end gap-1">
+                  <div className="text-2xl font-semibold text-white">🍩5</div>
+                  <span className="pb-1 text-xs text-gray-400">/s</span>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-zinc-800 bg-black">
+              <CardContent className="grid gap-2 p-3">
+                <div className="text-sm font-bold uppercase text-gray-400">
+                  GLAZE PRICE
+                </div>
+                <div className="text-2xl font-semibold text-pink-400">
+                  Ξ0.012
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Button className="w-full rounded-2xl bg-pink-500 py-4 text-base font-bold text-black shadow-lg transition-colors hover:bg-pink-400">
+            GLAZE
+          </Button>
+
+          <div>
+            <div className="mb-1 text-[11px] uppercase tracking-wide text-gray-400">
+              Your Balances
+            </div>
+            <div className="flex justify-between text-[13px] font-semibold">
+              <div className="flex items-center gap-2">
+                <span>🍩</span>
+                <span>343.23</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span>Ξ</span>
+                <span>1.334</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <p className="pb-2 text-center text-[12px] leading-snug text-gray-400">
+          Pay the Glaze Price to become the King Glazer. Earn $DONUT each second
+          until another player glazes the donut. 80% of their payment goes to
+          you.
+        </p>
+      </div>
+    </main>
+  );
 }

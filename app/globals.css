@@ -3,39 +3,12 @@
 @tailwind utilities;
 
 :root {
-  --donut-icing: #ffe9ee;
-  --donut-dough: #f2c58b;
-  --donut-shadow: rgba(0, 0, 0, 0.18);
+  color-scheme: dark;
 }
 
-.donut {
-  position: relative;
-  width: 220px;
-  height: 220px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 50% 55%, var(--donut-icing), #ffd0dc 70%, #ffc1d0);
-  box-shadow: 0 12px 22px var(--donut-shadow), inset 0 6px 12px rgba(255, 255, 255, 0.45);
-}
-
-.donut:before {
-  content: "";
-  position: absolute;
-  inset: 14px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 50% 40%, var(--donut-dough), #e2a45e 60%, #cd8d3c);
-  box-shadow: inset 0 10px 16px rgba(0, 0, 0, 0.12);
-  -webkit-mask: radial-gradient(circle 42px at 50% 50%, transparent 98%, black 100%);
-  mask: radial-gradient(circle 42px at 50% 50%, transparent 98%, black 100%);
-}
-
-.sprinkle {
-  position: absolute;
-  width: 10px;
-  height: 3px;
-  border-radius: 2px;
-  transform: rotate(var(--r));
-  background: var(--c);
-  top: var(--t);
-  left: var(--l);
-  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background-color: #000;
+  color: #fff;
 }
