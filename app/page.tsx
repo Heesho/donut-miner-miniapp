@@ -15,8 +15,14 @@ export default function HomePage() {
   }, []);
 
   return (
-    <main className="grid h-screen w-screen place-items-center overflow-hidden bg-black font-mono text-white">
-      <div className="relative flex h-[95vh] w-full max-w-[520px] flex-col justify-between rounded-[28px] bg-black p-3 shadow-inner">
+    <main className="flex min-h-screen w-screen justify-center bg-black font-mono text-white">
+      <div
+        className="relative flex w-full max-w-[520px] flex-1 flex-col justify-between rounded-[28px] bg-black px-4 pb-5 shadow-inner"
+        style={{
+          paddingTop: "calc(env(safe-area-inset-top, 0px) + 12px)",
+          paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 12px)",
+        }}
+      >
         <div>
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold tracking-wide">DONUT MINER</h1>
@@ -115,7 +121,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        <p className="pb-2 text-center text-[12px] leading-snug text-gray-400">
+        <p className="px-1 text-center text-[12px] leading-snug text-gray-400">
           Pay the Glaze Price to become the King Glazer. Earn $DONUT each second
           until another player glazes the donut. 80% of their payment goes to
           you.
