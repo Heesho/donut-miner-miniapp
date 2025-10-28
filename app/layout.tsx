@@ -30,7 +30,7 @@ const geistSans = Geist({ subsets: ["latin"], variable: "--font-geist-sans" })
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={geistSans.variable}>
-      <body className="bg-neutral-950 text-neutral-100">
+      <body className="bg-black text-white">
         <WagmiRoot>
           <ReactQueryClientProvider>{children}</ReactQueryClientProvider>
         </WagmiRoot>

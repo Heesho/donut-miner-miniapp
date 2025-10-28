@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react"
 import { sdk } from "@farcaster/miniapp-sdk"
 import { useAccount } from "wagmi"
 import { useMinerState } from "@/hooks/useMinerState"
-import { GlazePanel } from "@/components/GlazePanel"
+import GlazePanel from "@/components/GlazePanel"
 
 export default function Page() {
   useEffect(() => {
