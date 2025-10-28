@@ -15,12 +15,12 @@ export default function HomePage() {
   }, []);
 
   return (
-    <main className="flex min-h-screen w-screen justify-center bg-black font-mono text-white">
+    <main className="flex h-screen w-screen justify-center overflow-hidden bg-black font-mono text-white">
       <div
-        className="relative flex w-full max-w-[520px] flex-1 flex-col justify-between rounded-[28px] bg-black px-4 pb-5 shadow-inner"
+        className="relative flex h-full w-full max-w-[520px] flex-1 flex-col justify-between rounded-[28px] bg-black px-4 pb-4 shadow-inner"
         style={{
-          paddingTop: "calc(env(safe-area-inset-top, 0px) + 12px)",
-          paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 12px)",
+          paddingTop: "calc(env(safe-area-inset-top, 0px) + 8px)",
+          paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 8px)",
         }}
       >
         <div>
@@ -41,8 +41,8 @@ export default function HomePage() {
 
           <div className="mt-2 grid grid-cols-2 gap-2">
             <Card className="border-zinc-800 bg-black">
-              <CardContent className="grid gap-2 p-3">
-                <div className="text-sm font-bold uppercase text-gray-400">
+              <CardContent className="grid gap-1.5 p-2.5">
+                <div className="text-[10px] font-bold uppercase tracking-[0.08em] text-gray-400">
                   KING GLAZER
                 </div>
                 <div className="flex items-center gap-2">
@@ -60,8 +60,8 @@ export default function HomePage() {
             </Card>
 
             <Card className="border-zinc-800 bg-black">
-              <CardContent className="grid gap-2 p-3">
-                <div className="text-sm font-bold uppercase text-gray-400">
+              <CardContent className="grid gap-1.5 p-2.5">
+                <div className="text-[10px] font-bold uppercase tracking-[0.08em] text-gray-400">
                   GLAZED
                 </div>
                 <div className="text-2xl font-semibold text-white">🍩535</div>
@@ -69,7 +69,7 @@ export default function HomePage() {
             </Card>
           </div>
 
-          <div className="my-12 flex justify-center select-none text-[12rem] leading-none">
+          <div className="my-6 flex justify-center select-none text-[8.25rem] leading-none">
             🍩
           </div>
         </div>
@@ -77,8 +77,8 @@ export default function HomePage() {
         <div className="mb-2 flex flex-col gap-3">
           <div className="grid grid-cols-2 gap-2">
             <Card className="border-zinc-800 bg-black">
-              <CardContent className="grid gap-2 p-3">
-                <div className="text-sm font-bold uppercase text-gray-400">
+              <CardContent className="grid gap-1.5 p-2.5">
+                <div className="text-[10px] font-bold uppercase tracking-[0.08em] text-gray-400">
                   GLAZE RATE
                 </div>
                 <div className="flex items-end gap-1">
@@ -89,8 +89,8 @@ export default function HomePage() {
             </Card>
 
             <Card className="border-zinc-800 bg-black">
-              <CardContent className="grid gap-2 p-3">
-                <div className="text-sm font-bold uppercase text-gray-400">
+              <CardContent className="grid gap-1.5 p-2.5">
+                <div className="text-[10px] font-bold uppercase tracking-[0.08em] text-gray-400">
                   GLAZE PRICE
                 </div>
                 <div className="text-2xl font-semibold text-pink-400">
@@ -100,7 +100,7 @@ export default function HomePage() {
             </Card>
           </div>
 
-          <Button className="w-full rounded-2xl bg-pink-500 py-4 text-base font-bold text-black shadow-lg transition-colors hover:bg-pink-400">
+          <Button className="w-full rounded-2xl bg-pink-500 py-3.5 text-base font-bold text-black shadow-lg transition-colors hover:bg-pink-400">
             GLAZE
           </Button>
 
