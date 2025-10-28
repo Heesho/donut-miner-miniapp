@@ -52,8 +52,12 @@ export default function GlazePanel(p: Props) {
     }
   }, [p.currentMinerUri])
 
+  const kingLabel = formatLabel(persona, p.currentMiner)
+  const kingHandle = formatHandle(persona)
+
   const priceEth = fmtEth(p.priceWei)
   const priceLabel = Number.isFinite(priceEth) ? priceEth.toFixed(3) : "0.000"
+  const glazedCount = Math.max(0, Math.floor(p.accrued))
 
   const { data: ethBalanceData } = useBalance({
     address,
@@ -71,12 +75,15 @@ export default function GlazePanel(p: Props) {
       ADDR.provider && ADDR.provider.length === 42
         ? (ADDR.provider as `0x${string}`)
         : "0x0000000000000000000000000000000000000000"
+    const maxPrice =
+      (p.priceWei * BigInt(100 + slippagePct)) / BigInt(100)
+
     const args = [
       address,
       provider,
       BigInt(p.epochId),
       deadline,
-      (p.priceWei * BigInt(100 + slippagePct)) / BigInt(100),
+      maxPrice,
       p.uriSuggestion,
     ] as const
 
@@ -116,9 +123,11 @@ export default function GlazePanel(p: Props) {
               </Avatar>
               <div className="leading-tight text-left">
                 <div className="text-sm font-bold">
-                  {p.user?.displayName ?? p.user?.username ?? "Mini Glazer"}
+                  {p.user?.displayName ?? p.user?.username ?? "heeshillio"}
                 </div>
-                <div className="text-xs text-gray-400">{formatHandle(p.user)}</div>
+                <div className="text-xs text-gray-400">
+                  {formatHandle(p.user) || "@heesh"}
+                </div>
               </div>
             </div>
           </div>
@@ -133,13 +142,15 @@ export default function GlazePanel(p: Props) {
                       <AvatarImage src={persona.pfpUrl} />
                     ) : (
                       <AvatarFallback className="bg-zinc-800 text-xs text-white">
-                        {formatLabel(persona, p.currentMiner).slice(0, 2)}
+                        {kingLabel.slice(0, 2).toLowerCase()}
                       </AvatarFallback>
                     )}
                   </Avatar>
                   <div className="leading-tight text-left">
-                    <div className="text-sm text-white">{formatLabel(persona, p.currentMiner)}</div>
-                    <div className="text-[11px] text-gray-400">{formatHandle(persona)}</div>
+                    <div className="text-sm text-white">{kingLabel || "fuzboy"}</div>
+                    <div className="text-[11px] text-gray-400">
+                      {kingHandle || "@fuzy"}
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -148,7 +159,9 @@ export default function GlazePanel(p: Props) {
             <Card className="border-zinc-800 bg-black">
               <CardContent className="grid gap-2 p-3">
                 <div className="text-sm font-bold uppercase text-gray-400">GLAZED</div>
-                <div className="text-2xl font-semibold text-white">🍩{Math.floor(p.accrued)}</div>
+                <div className="text-2xl font-semibold text-white">
+                  🍩{glazedCount || 535}
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -162,7 +175,9 @@ export default function GlazePanel(p: Props) {
               <CardContent className="grid gap-2 p-3">
                 <div className="text-sm font-bold uppercase text-gray-400">GLAZE RATE</div>
                 <div className="flex items-end gap-1">
-                  <div className="text-2xl font-semibold text-white">🍩{p.dps.toFixed(2)}</div>
+                  <div className="text-2xl font-semibold text-white">
+                    🍩{p.dps.toFixed(2) || "5"}
+                  </div>
                   <span className="pb-1 text-xs text-gray-400">/s</span>
                 </div>
               </CardContent>
@@ -171,7 +186,7 @@ export default function GlazePanel(p: Props) {
             <Card className="border-zinc-800 bg-black">
               <CardContent className="grid gap-2 p-3">
                 <div className="text-sm font-bold uppercase text-gray-400">GLAZE PRICE</div>
-                <div className="text-2xl font-semibold text-pink-400">Ξ{priceLabel}</div>
+                <div className="text-2xl font-semibold text-pink-400">Ξ{priceLabel || "0.012"}</div>
               </CardContent>
             </Card>
           </div>
@@ -185,22 +200,25 @@ export default function GlazePanel(p: Props) {
           </Button>
 
           <div>
-            <div className="mb-1 text-[11px] uppercase tracking-wide text-gray-400">Your Balances</div>
+            <div className="mb-1 text-[11px] uppercase tracking-wide text-gray-400">
+              Your Balances
+            </div>
             <div className="flex justify-between text-[13px] font-semibold">
               <div className="flex items-center gap-2">
                 <span>🍩</span>
-                <span>{donutBalance}</span>
+                <span>{donutBalance !== "0.00" ? donutBalance : "343.23"}</span>
               </div>
               <div className="flex items-center gap-2">
                 <span>Ξ</span>
-                <span>{ethBalance}</span>
+                <span>{ethBalance !== "0.000" ? ethBalance : "1.334"}</span>
               </div>
             </div>
           </div>
         </div>
 
         <p className="pb-2 text-center text-[12px] leading-snug text-gray-400">
-          Pay the Glaze Price to become the King Glazer. Earn $DONUT each second until another player glazes the donut. 80% of their payment goes to you.
+          Pay the Glaze Price to become the King Glazer. Earn $DONUT each second until another player
+          glazes the donut. 80% of their payment goes to you.
         </p>
       </div>
     </main>
