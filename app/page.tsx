@@ -17,13 +17,13 @@ export default function HomePage() {
   return (
     <main className="flex h-screen w-screen justify-center overflow-hidden bg-black font-mono text-white">
       <div
-        className="relative flex h-full w-full max-w-[520px] flex-1 flex-col justify-between rounded-[28px] bg-black px-4 pb-4 shadow-inner"
+        className="relative flex h-full w-full max-w-[520px] flex-1 flex-col rounded-[28px] bg-black px-4 pb-4 shadow-inner"
         style={{
           paddingTop: "calc(env(safe-area-inset-top, 0px) + 8px)",
           paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 8px)",
         }}
       >
-        <div>
+        <div className="flex flex-1 flex-col">
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold tracking-wide">DONUT MINER</h1>
             <div className="flex items-center gap-2 rounded-full bg-black px-3 py-1">
@@ -69,12 +69,12 @@ export default function HomePage() {
             </Card>
           </div>
 
-          <div className="my-6 flex justify-center select-none text-[8.25rem] leading-none">
-            🍩
+          <div className="flex flex-1 items-center justify-center">
+            <div className="select-none text-[10rem] leading-none">🍩</div>
           </div>
         </div>
 
-        <div className="mb-2 flex flex-col gap-3">
+        <div className="flex flex-col gap-3">
           <div className="grid grid-cols-2 gap-2">
             <Card className="border-zinc-800 bg-black">
               <CardContent className="grid gap-1.5 p-2.5">
