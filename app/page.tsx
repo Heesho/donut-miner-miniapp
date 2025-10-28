@@ -81,7 +81,7 @@ export default function HomePage() {
                 <div className="text-[10px] font-bold uppercase tracking-[0.08em] text-gray-400">
                   GLAZE RATE
                 </div>
-                <div className="flex items-end gap-1">
+                <div className="flex items-end gap-0.5">
                   <div className="text-2xl font-semibold text-white">🍩5</div>
                   <span className="pb-1 text-xs text-gray-400">/s</span>
                 </div>
@@ -121,7 +121,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        <p className="px-1 text-center text-[12px] leading-snug text-gray-400">
+        <p className="px-1 pt-2 text-center text-[12px] leading-snug text-gray-400">
           Pay the Glaze Price to become the King Glazer. Earn $DONUT each second
           until another player glazes the donut. 80% of their payment goes to
           you.
