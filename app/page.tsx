@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { sdk } from "@farcaster/miniapp-sdk"
 import { useAccount } from "wagmi"
 import { useMinerState } from "@/hooks/useMinerState"
@@ -20,7 +20,27 @@ export default function Page() {
 
   const { address } = useAccount()
   const { data, isLoading } = useMinerState(address)
-  const user = sdk.context.user
+  const [user, setUser] = useState<{ username?: string; displayName?: string; pfpUrl?: string }>()
+
+  useEffect(() => {
+    let cancelled = false
+    sdk.context
+      .then((ctx) => {
+        if (!cancelled) {
+          setUser({
+            username: ctx.user?.username,
+            displayName: ctx.user?.displayName,
+            pfpUrl: ctx.user?.pfpUrl,
+          })
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setUser(undefined)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const uriSuggestion = useMemo(() => {
     const obj = {
