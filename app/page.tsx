@@ -55,30 +55,33 @@ export default function Page() {
     }
   }, [user])
 
-  if (isLoading || !data) {
-    return (
-      <div className="space-y-6 p-4">
-        <HeaderBar username={user?.username} pfp={user?.pfpUrl} />
-        <div className="h-[540px] animate-pulse rounded-xl bg-neutral-900" />
-      </div>
-    )
-  }
-
   return (
-    <div className="space-y-6 p-4">
-      <HeaderBar username={user?.username} pfp={user?.pfpUrl} />
-      <GlazePanel
-        epochId={data.epochId}
-        startTime={data.startTime}
-        timeLeft={data.timeLeft}
-        dps={data.dps}
-        priceWei={data.price as unknown as bigint}
-        currentMiner={data.miner}
-        uriSuggestion={uriSuggestion}
-      />
-      <div className="text-center text-xs text-neutral-400">
-        Accruing donuts for current miner: <b>{data.accrued.toFixed(2)}</b>
-      </div>
+    <div className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top,_rgba(255,105,180,0.1),_transparent_55%),#08080b]">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_bottom,_rgba(236,72,153,0.18),_transparent_60%)]" />
+      <main className="relative z-10 mx-auto flex min-h-screen max-w-[460px] flex-col gap-6 px-5 py-6">
+        <HeaderBar
+          username={user?.username}
+          displayName={user?.displayName}
+          pfp={user?.pfpUrl}
+        />
+        {isLoading || !data ? (
+          <div className="flex flex-1 items-center justify-center">
+            <div className="h-[520px] w-full animate-pulse rounded-[32px] border border-white/10 bg-neutral-900/70" />
+          </div>
+        ) : (
+          <GlazePanel
+            epochId={data.epochId}
+            timeLeft={data.timeLeft}
+            dps={data.dps}
+            nextDps={data.nextDps}
+            priceWei={data.price as unknown as bigint}
+            currentMiner={data.miner}
+            currentMinerUri={data.uri}
+            accrued={data.accrued}
+            uriSuggestion={uriSuggestion}
+          />
+        )}
+      </main>
     </div>
   )
 }
