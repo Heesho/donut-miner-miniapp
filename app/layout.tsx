@@ -3,7 +3,7 @@ import type { Metadata } from "next"
 import { ReactQueryClientProvider } from "@/components/ReactQueryProvider"
 import { WagmiProvider } from "wagmi"
 import { wagmiConfig } from "@/lib/wagmi"
-import { GeistSans } from "geist/font/sans"
+import { Geist } from "next/font/google"
 
 const embed = {
   version: "1",
@@ -26,9 +26,11 @@ export const metadata: Metadata = {
   other: { "fc:miniapp": JSON.stringify(embed) },
 }
 
+const geistSans = Geist({ subsets: ["latin"], variable: "--font-geist-sans" })
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={GeistSans.variable}>
+    <html lang="en" className={geistSans.variable}>
       <body className="bg-neutral-950 text-neutral-100">
         <WagmiProvider config={wagmiConfig}>
           <ReactQueryClientProvider>{children}</ReactQueryClientProvider>
