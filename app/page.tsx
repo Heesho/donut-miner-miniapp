@@ -61,7 +61,7 @@ export default function Page() {
       timeLeft={data?.timeLeft ?? 0}
       dps={data?.dps ?? 0}
       nextDps={data?.nextDps ?? 0}
-      priceWei={(data?.price as unknown as bigint) ?? 0n}
+      priceWei={(data?.price as unknown as bigint) ?? BigInt(0)}
       currentMiner={data?.miner ?? "0x0000000000000000000000000000000000000000"}
       currentMinerUri={data?.uri ?? null}
       accrued={data?.accrued ?? 0}
