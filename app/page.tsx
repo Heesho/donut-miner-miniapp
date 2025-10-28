@@ -55,28 +55,19 @@ export default function Page() {
   }, [user])
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-black text-white">
-      <main className="relative mx-auto flex h-[640px] w-full max-w-[420px] flex-col justify-center gap-6 px-5 py-6">
-        {isLoading || !data ? (
-          <div className="flex flex-1 items-center justify-center">
-            <div className="h-[520px] w-full animate-pulse rounded-[32px] border border-white/10 bg-neutral-900/70" />
-          </div>
-        ) : (
-          <GlazePanel
-            user={user ?? undefined}
-            epochId={data.epochId}
-            timeLeft={data.timeLeft}
-            dps={data.dps}
-            nextDps={data.nextDps}
-            priceWei={data.price as unknown as bigint}
-            currentMiner={data.miner}
-            currentMinerUri={data.uri}
-            accrued={data.accrued}
-            donutsHeld={data.donutsOfAccount}
-            uriSuggestion={uriSuggestion}
-          />
-        )}
-      </main>
-    </div>
+    <GlazePanel
+      user={user ?? undefined}
+      epochId={data?.epochId ?? 0}
+      timeLeft={data?.timeLeft ?? 0}
+      dps={data?.dps ?? 0}
+      nextDps={data?.nextDps ?? 0}
+      priceWei={(data?.price as unknown as bigint) ?? 0n}
+      currentMiner={data?.miner ?? "0x0000000000000000000000000000000000000000"}
+      currentMinerUri={data?.uri ?? null}
+      accrued={data?.accrued ?? 0}
+      donutsHeld={data?.donutsOfAccount ?? 0}
+      uriSuggestion={uriSuggestion}
+      isLoading={isLoading}
+    />
   )
 }
