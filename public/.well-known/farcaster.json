@@ -1,0 +1,21 @@
+{
+  "accountAssociation": {
+    "header": "REPLACE_WITH_BASE64_HEADER",
+    "payload": "REPLACE_WITH_BASE64_PAYLOAD",
+    "signature": "REPLACE_WITH_BASE64_SIGNATURE"
+  },
+  "miniapp": {
+    "version": "1",
+    "name": "Donut Miner",
+    "iconUrl": "https://your-domain.xyz/icon.png",
+    "homeUrl": "https://your-domain.xyz",
+    "splashImageUrl": "https://your-domain.xyz/icon.png",
+    "splashBackgroundColor": "#0b0b0b",
+    "description": "Become King Glazer. Pay the decaying price to take the throne. Earn $DONUT per second.",
+    "requiredChains": ["eip155:8453"],
+    "requiredCapabilities": ["wallet.getEthereumProvider", "actions.ready"],
+    "ogTitle": "Donut Miner",
+    "ogDescription": "Glaze the donut, claim the crown.",
+    "ogImageUrl": "https://your-domain.xyz/og.png"
+  }
+}
