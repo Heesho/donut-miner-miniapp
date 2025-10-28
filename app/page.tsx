@@ -16,7 +16,7 @@ export default function HomePage() {
 
   return (
     <main className="grid h-screen w-screen place-items-center overflow-hidden bg-black font-mono text-white">
-      <div className="relative flex h-[95vh] w-full max-w-[520px] flex-col justify-between rounded-[28px] border border-zinc-800 bg-black p-3 shadow-inner">
+      <div className="relative flex h-[95vh] w-full max-w-[520px] flex-col justify-between rounded-[28px] bg-black p-3 shadow-inner">
         <div>
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold tracking-wide">DONUT MINER</h1>
