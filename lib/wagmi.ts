@@ -5,6 +5,7 @@ import { createConfig } from "wagmi";
 
 export const wagmiConfig = createConfig({
   chains: [base],
+  autoConnect: true,
   ssr: true,
   connectors: [farcasterMiniApp()],
   transports: {

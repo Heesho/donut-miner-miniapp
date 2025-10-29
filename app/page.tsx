@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { sdk } from "@farcaster/miniapp-sdk";
 import { CircleUserRound } from "lucide-react";
 import {
@@ -11,14 +12,9 @@ import {
   useWriteContract,
 } from "wagmi";
 import { base } from "wagmi/chains";
-import {
-  formatEther,
-  formatUnits,
-  zeroAddress,
-  type Address,
-} from "viem";
+import { formatEther, formatUnits, zeroAddress, type Address } from "viem";
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -113,23 +109,28 @@ const getErrorMessage = (error: unknown) => {
 
 export default function HomePage() {
   const readyRef = useRef(false);
+  const autoConnectAttempted = useRef(false);
   const [context, setContext] = useState<MiniAppContext | null>(null);
   const [localStatus, setLocalStatus] = useState<string | null>(null);
-  const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
 
   useEffect(() => {
-    try {
-      setContext((sdk.context ?? null) as MiniAppContext | null);
-    } catch {
-      setContext(null);
-    }
-  }, []);
-
-  useEffect(() => {
-    const id = setInterval(() => {
-      setNow(Math.floor(Date.now() / 1000));
-    }, 1000);
-    return () => clearInterval(id);
+    let cancelled = false;
+    const hydrateContext = async () => {
+      try {
+        const ctx = (await (sdk as unknown as {
+          context: Promise<MiniAppContext> | MiniAppContext;
+        }).context) as MiniAppContext;
+        if (!cancelled) {
+          setContext(ctx);
+        }
+      } catch {
+        if (!cancelled) setContext(null);
+      }
+    };
+    hydrateContext();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -146,6 +147,24 @@ export default function HomePage() {
   const { connectors, connectAsync, isPending: isConnecting } = useConnect();
   const primaryConnector = connectors[0];
 
+  useEffect(() => {
+    if (
+      autoConnectAttempted.current ||
+      isConnected ||
+      !primaryConnector ||
+      isConnecting
+    ) {
+      return;
+    }
+    autoConnectAttempted.current = true;
+    connectAsync({
+      connector: primaryConnector,
+      chainId: base.id,
+    }).catch(() => {
+      // Ignore auto-connect failures; user can connect manually.
+    });
+  }, [connectAsync, isConnected, isConnecting, primaryConnector]);
+
   const {
     data: rawMinerState,
     isFetching: isLoadingState,
@@ -157,7 +176,7 @@ export default function HomePage() {
     args: [address ?? zeroAddress],
     chainId: base.id,
     query: {
-      refetchInterval: 15_000,
+      refetchInterval: 1_000,
     },
   });
 
@@ -201,14 +220,38 @@ export default function HomePage() {
     return;
   }, [receipt, refetchMinerState, resetWrite]);
 
-  const currentGlazed = useMemo(() => {
-    if (!minerState) return 0n;
-    const startTime = toBigInt(minerState.startTime);
-    const nowBigInt = BigInt(now);
-    if (nowBigInt <= startTime) return 0n;
-    const elapsed = nowBigInt - startTime;
-    return minerState.dps * elapsed;
-  }, [minerState, now]);
+  const minerAddress = minerState?.miner ?? zeroAddress;
+  const hasMiner = minerAddress !== zeroAddress;
+
+  const { data: neynarUser } = useQuery<{
+    user: {
+      fid: number | null;
+      username: string | null;
+      displayName: string | null;
+      pfpUrl: string | null;
+    } | null;
+  }>({
+    queryKey: ["neynar-user", minerAddress],
+    queryFn: async () => {
+      const res = await fetch(
+        `/api/neynar/user?address=${encodeURIComponent(minerAddress)}`,
+      );
+      if (!res.ok) {
+        throw new Error("Failed to load Farcaster profile.");
+      }
+      return (await res.json()) as {
+        user: {
+          fid: number | null;
+          username: string | null;
+          displayName: string | null;
+          pfpUrl: string | null;
+        } | null;
+      };
+    },
+    enabled: hasMiner,
+    staleTime: 60_000,
+    retry: false,
+  });
 
   const handleGlaze = useCallback(async () => {
     if (!minerState) return;
@@ -230,7 +273,9 @@ export default function HomePage() {
       }
       const price = minerState.price;
       const epochId = toBigInt(minerState.epochId);
-      const deadline = BigInt(Math.floor(Date.now() / 1000) + DEADLINE_BUFFER_SECONDS);
+      const deadline = BigInt(
+        Math.floor(Date.now() / 1000) + DEADLINE_BUFFER_SECONDS,
+      );
       const maxPrice = price === 0n ? 0n : (price * 105n) / 100n;
       await writeContract({
         address: CONTRACT_ADDRESSES.miner,
@@ -257,7 +302,6 @@ export default function HomePage() {
     context?.user?.username,
     minerState,
     primaryConnector,
-    setLocalStatus,
     writeContract,
   ]);
 
@@ -267,23 +311,47 @@ export default function HomePage() {
         primary: "—",
         secondary: "",
         isYou: false,
+        avatarUrl: null as string | null,
       };
     }
     const trimmedUri = minerState.uri?.trim();
-    const minerAddress = minerState.miner;
+    const minerAddr = minerState.miner;
     const isYou =
       !!address &&
-      minerAddress.toLowerCase() === (address as string).toLowerCase();
-    const fallback = formatAddress(minerAddress);
-    const primary = trimmedUri || (isYou ? "You" : fallback);
-    const secondary =
-      trimmedUri && trimmedUri !== fallback ? fallback : isYou ? fallback : "";
+      minerAddr.toLowerCase() === (address as string).toLowerCase();
+
+    const profile = neynarUser?.user ?? null;
+    const profileUsername = profile?.username
+      ? `@${profile.username}`
+      : undefined;
+    const fallback = formatAddress(minerAddr);
+
+    const primary =
+      profile?.displayName ??
+      profile?.username ??
+      trimmedUri ??
+      (isYou ? "You" : fallback);
+
+    let secondary: string | undefined =
+      profile?.displayName && profileUsername
+        ? profileUsername
+        : profile?.username && primary !== profileUsername
+          ? profileUsername
+          : trimmedUri && trimmedUri !== primary
+            ? trimmedUri
+            : !isYou && fallback !== primary
+              ? fallback
+              : undefined;
+
+    if (secondary === primary) secondary = undefined;
+
     return {
       primary,
-      secondary,
+      secondary: secondary ?? "",
       isYou,
+      avatarUrl: profile?.pfpUrl ?? null,
     };
-  }, [address, minerState]);
+  }, [address, minerState, neynarUser?.user]);
 
   const glazeRateDisplay = minerState
     ? formatTokenAmount(minerState.dps, DONUT_DECIMALS, 4)
@@ -295,31 +363,26 @@ export default function HomePage() {
     ? `Ξ${formatEth(minerState.price, minerState.price === 0n ? 0 : 5)}`
     : "Ξ—";
   const glazedDisplay = minerState
-    ? `🍩${formatTokenAmount(currentGlazed, DONUT_DECIMALS, 2)}`
+    ? `🍩${formatTokenAmount(minerState.glazed, DONUT_DECIMALS, 2)}`
     : "🍩—";
 
   const donutBalanceDisplay =
-    isConnected && minerState
+    minerState && minerState.donutBalance !== undefined
       ? formatTokenAmount(minerState.donutBalance, DONUT_DECIMALS, 2)
       : "—";
   const ethBalanceDisplay =
-    isConnected && minerState
+    minerState && minerState.ethBalance !== undefined
       ? formatEth(minerState.ethBalance, 4)
       : "—";
 
   const buttonLabel = useMemo(() => {
     if (!minerState || isLoadingState) return "Loading…";
-    if (!isConnected) return "Connect & Glaze";
     if (minerState.price === 0n) return "Claim the Throne";
     return `Glaze ${glazePriceDisplay}`;
-  }, [glazePriceDisplay, isConnected, isLoadingState, minerState]);
+  }, [glazePriceDisplay, isLoadingState, minerState]);
 
   const isGlazeDisabled =
-    !minerState ||
-    isLoadingState ||
-    isWriting ||
-    isConfirming ||
-    isConnecting;
+    !minerState || isLoadingState || isWriting || isConfirming || isConnecting;
 
   const statusMessage = useMemo(() => {
     if (isWriting) return "Confirm the transaction in your wallet…";
@@ -338,12 +401,12 @@ export default function HomePage() {
   ]);
 
   const userDisplayName =
-    context?.user?.displayName ?? context?.user?.username ?? "Guest";
+    context?.user?.displayName ?? context?.user?.username ?? "Farcaster user";
   const userHandle = context?.user?.username
     ? `@${context.user.username}`
     : context?.user?.fid
       ? `fid ${context.user.fid}`
-      : "Not signed in";
+      : "";
 
   return (
     <main className="flex h-screen w-screen justify-center overflow-hidden bg-black font-mono text-white">
@@ -360,14 +423,14 @@ export default function HomePage() {
             <div className="flex items-center gap-2 rounded-full bg-black px-3 py-1">
               <Avatar className="h-8 w-8 border border-zinc-800">
                 <AvatarFallback className="bg-zinc-800 text-white">
-                  {context?.user
-                    ? initialsFrom(context.user.displayName ?? context.user.username)
-                    : <CircleUserRound className="h-4 w-4" />}
+                  {initialsFrom(userDisplayName)}
                 </AvatarFallback>
               </Avatar>
               <div className="leading-tight text-left">
                 <div className="text-sm font-bold">{userDisplayName}</div>
-                <div className="text-xs text-gray-400">{userHandle}</div>
+                {userHandle ? (
+                  <div className="text-xs text-gray-400">{userHandle}</div>
+                ) : null}
               </div>
             </div>
           </div>
@@ -380,14 +443,23 @@ export default function HomePage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Avatar className="h-8 w-8 border border-zinc-800">
+                    {occupantDisplay.avatarUrl ? (
+                      <AvatarImage
+                        src={occupantDisplay.avatarUrl}
+                        alt={occupantDisplay.primary}
+                      />
+                    ) : null}
                     <AvatarFallback className="bg-zinc-800 text-white text-xs uppercase">
-                      {minerState
-                        ? initialsFrom(
-                            occupantDisplay.primary === "You"
-                              ? context?.user?.displayName ?? context?.user?.username
-                              : occupantDisplay.primary,
-                          )
-                        : <CircleUserRound className="h-4 w-4" />}
+                      {minerState ? (
+                        initialsFrom(
+                          occupantDisplay.primary === "You"
+                            ? context?.user?.displayName ??
+                                context?.user?.username
+                            : occupantDisplay.primary,
+                        )
+                      ) : (
+                        <CircleUserRound className="h-4 w-4" />
+                      )}
                     </AvatarFallback>
                   </Avatar>
                   <div className="leading-tight text-left">
