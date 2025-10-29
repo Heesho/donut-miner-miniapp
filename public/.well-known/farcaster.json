@@ -1,0 +1,30 @@
+{
+  "accountAssociation": {
+    "header": "REPLACE_WITH_BASE64_HEADER",
+    "payload": "REPLACE_WITH_BASE64_PAYLOAD",
+    "signature": "REPLACE_WITH_BASE64_SIGNATURE"
+  },
+  "miniapp": {
+    "version": "1",
+    "name": "Donut Miner",
+    "tagline": "Claim the glaze factory and earn donuts on Base.",
+    "description": "Command Glaze Corp's donut mine, compete for control, and keep the rewards flowing on Base.",
+    "iconUrl": "https://glazecorp.vercel.app/media/icon.png",
+    "homeUrl": "https://glazecorp.vercel.app/",
+    "splashImageUrl": "https://glazecorp.vercel.app/media/icon.png",
+    "splashBackgroundColor": "#FEE7EC",
+    "heroImageUrl": "https://glazecorp.vercel.app/media/hero.png",
+    "ogTitle": "Donut Miner",
+    "ogDescription": "Race the rink to seize the donut mine and keep the glaze flowing.",
+    "ogImageUrl": "https://glazecorp.vercel.app/media/hero.png",
+    "requiredChains": [
+      "eip155:8453"
+    ],
+    "primaryCategory": "gaming",
+    "tags": [
+      "gaming",
+      "base",
+      "rewards"
+    ]
+  }
+}
