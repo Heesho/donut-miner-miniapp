@@ -295,12 +295,12 @@ export default function HomePage() {
       );
       const maxPrice = price === 0n ? 0n : (price * 105n) / 100n;
       await writeContract({
-        address: CONTRACT_ADDRESSES.miner,
+        account: targetAddress as Address,
+        address: CONTRACT_ADDRESSES.miner as Address,
         abi: MINER_ABI,
         functionName: "mine",
         args: [
-          targetAddress,
-          CONTRACT_ADDRESSES.provider,
+          CONTRACT_ADDRESSES.provider as Address,
           epochId,
           deadline,
           maxPrice,
