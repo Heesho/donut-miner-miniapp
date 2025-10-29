@@ -69,8 +69,18 @@ export default function HomePage() {
             </Card>
           </div>
 
-          <div className="flex flex-1 items-center justify-center">
-            <div className="select-none text-[10rem] leading-none">🍩</div>
+          <div className="flex flex-1 items-center">
+            <div className="-mx-4 w-[calc(100%+2rem)] overflow-hidden">
+              <video
+                className="aspect-[16/9] w-full object-cover"
+                autoPlay
+                loop
+                muted
+                playsInline
+                preload="auto"
+                src="/media/donut-loop.mp4"
+              />
+            </div>
           </div>
         </div>
 
