@@ -47,8 +47,6 @@ type MinerState = {
   donutBalance: bigint;
 };
 
-type GlazeState = "idle" | "pending" | "success" | "failure";
-
 const DONUT_DECIMALS = 18;
 const DEADLINE_BUFFER_SECONDS = 15 * 60;
 
@@ -99,23 +97,32 @@ export default function HomePage() {
   const readyRef = useRef(false);
   const autoConnectAttempted = useRef(false);
   const [context, setContext] = useState<MiniAppContext | null>(null);
-  const [glazeState, setGlazeState] = useState<GlazeState>("idle");
-  const glazeResetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+  const [glazeResult, setGlazeResult] = useState<"success" | "failure" | null>(
     null,
   );
-  const updateGlazeState = useCallback((next: GlazeState) => {
-    if (glazeResetTimeoutRef.current) {
-      clearTimeout(glazeResetTimeoutRef.current);
-      glazeResetTimeoutRef.current = null;
+  const glazeResultTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+  const resetGlazeResult = useCallback(() => {
+    if (glazeResultTimeoutRef.current) {
+      clearTimeout(glazeResultTimeoutRef.current);
+      glazeResultTimeoutRef.current = null;
     }
-    setGlazeState(next);
-    if (next === "success" || next === "failure") {
-      glazeResetTimeoutRef.current = setTimeout(() => {
-        setGlazeState("idle");
-        glazeResetTimeoutRef.current = null;
-      }, 3000);
-    }
+    setGlazeResult(null);
   }, []);
+  const showGlazeResult = useCallback(
+    (result: "success" | "failure") => {
+      if (glazeResultTimeoutRef.current) {
+        clearTimeout(glazeResultTimeoutRef.current);
+      }
+      setGlazeResult(result);
+      glazeResultTimeoutRef.current = setTimeout(() => {
+        setGlazeResult(null);
+        glazeResultTimeoutRef.current = null;
+      }, 3000);
+    },
+    [],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -139,8 +146,8 @@ export default function HomePage() {
 
   useEffect(() => {
     return () => {
-      if (glazeResetTimeoutRef.current) {
-        clearTimeout(glazeResetTimeoutRef.current);
+      if (glazeResultTimeoutRef.current) {
+        clearTimeout(glazeResultTimeoutRef.current);
       }
     };
   }, []);
@@ -218,7 +225,9 @@ export default function HomePage() {
   useEffect(() => {
     if (!receipt) return;
     if (receipt.status === "success" || receipt.status === "reverted") {
-      updateGlazeState(receipt.status === "success" ? "success" : "failure");
+      showGlazeResult(
+        receipt.status === "success" ? "success" : "failure",
+      );
       refetchMinerState();
       const resetTimer = setTimeout(() => {
         resetWrite();
@@ -226,7 +235,7 @@ export default function HomePage() {
       return () => clearTimeout(resetTimer);
     }
     return;
-  }, [receipt, refetchMinerState, resetWrite, updateGlazeState]);
+  }, [receipt, refetchMinerState, resetWrite, showGlazeResult]);
 
   const minerAddress = minerState?.miner ?? zeroAddress;
   const hasMiner = minerAddress !== zeroAddress;
@@ -263,7 +272,7 @@ export default function HomePage() {
 
   const handleGlaze = useCallback(async () => {
     if (!minerState) return;
-    updateGlazeState("pending");
+    resetGlazeResult();
     try {
       let targetAddress = address;
       if (!targetAddress) {
@@ -302,7 +311,7 @@ export default function HomePage() {
       });
     } catch (error) {
       console.error("Failed to glaze:", error);
-      updateGlazeState("failure");
+      showGlazeResult("failure");
       resetWrite();
     }
   }, [
@@ -311,8 +320,9 @@ export default function HomePage() {
     context?.user?.username,
     minerState,
     primaryConnector,
+    resetGlazeResult,
     resetWrite,
-    updateGlazeState,
+    showGlazeResult,
     writeContract,
   ]);
 
@@ -407,17 +417,16 @@ export default function HomePage() {
 
   const buttonLabel = useMemo(() => {
     if (!minerState) return "Loading…";
-    if (glazeState === "success") return "SUCCESS";
-    if (glazeState === "failure") return "FAILURE";
-    if (glazeState === "pending" || isWriting || isConfirming) {
+    if (glazeResult === "success") return "SUCCESS";
+    if (glazeResult === "failure") return "FAILURE";
+    if (isWriting || isConfirming) {
       return "GLAZING…";
     }
     return "GLAZE";
-  }, [glazeState, isConfirming, isWriting, minerState]);
+  }, [glazeResult, isConfirming, isWriting, minerState]);
 
-  const isGlazeProcessing =
-    glazeState !== "idle" || isWriting || isConfirming;
-  const isGlazeDisabled = !minerState || isGlazeProcessing;
+  const isGlazeDisabled =
+    !minerState || isWriting || isConfirming || glazeResult !== null;
 
   const userDisplayName =
     context?.user?.displayName ?? context?.user?.username ?? "Farcaster user";
@@ -587,7 +596,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="mt-auto">
+          <div className="mt-auto px-2">
             <p className="mt-3 text-center text-[11px] leading-snug text-gray-400">
               Pay the glaze price to become the King Glazer. Earn $DONUT every
               second until another player glazes the donut. 80% of their payment
