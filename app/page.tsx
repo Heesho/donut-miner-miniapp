@@ -327,27 +327,44 @@ export default function HomePage() {
 
     const hasProfile = !!profile;
 
+    const contextProfile = context?.user ?? null;
+    const contextPrimaryLabel = contextProfile?.username
+      ? `@${contextProfile.username}`
+      : contextProfile?.displayName ?? null;
+
     const addressLabel = fallback;
 
     const primary = hasProfile
       ? profileUsername ?? profile?.displayName ?? addressLabel
-      : addressLabel;
+      : isYou && contextPrimaryLabel
+        ? contextPrimaryLabel
+        : addressLabel;
 
-    const secondary = hasProfile ? addressLabel : "";
+    const secondary =
+      hasProfile || (isYou && contextPrimaryLabel) ? addressLabel : "";
 
     const avatarUrl = hasProfile
-      ? profile?.pfpUrl ?? (isYou ? context?.user?.pfpUrl ?? null : null)
-      : null;
+      ? profile?.pfpUrl ?? (isYou ? contextProfile?.pfpUrl ?? null : null)
+      : isYou
+        ? contextProfile?.pfpUrl ?? null
+        : null;
 
     return {
       primary,
       secondary,
       isYou,
       avatarUrl,
-      isUnknown: !hasProfile,
+      isUnknown: !hasProfile && !isYou,
       addressLabel,
     };
-  }, [address, context?.user?.pfpUrl, minerState, neynarUser?.user]);
+  }, [
+    address,
+    context?.user?.displayName,
+    context?.user?.pfpUrl,
+    context?.user?.username,
+    minerState,
+    neynarUser?.user,
+  ]);
 
   const glazeRateDisplay = minerState
     ? formatTokenAmount(minerState.nextDps, DONUT_DECIMALS, 4)

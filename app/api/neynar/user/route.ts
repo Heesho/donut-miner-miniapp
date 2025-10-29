@@ -20,16 +20,23 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const res = await fetch(
-      `https://api.neynar.com/v2/farcaster/user/bulk-by-address?addresses=${address}`,
-      {
-        headers: {
-          accept: "application/json",
-          "api_key": apiKey,
-        },
-        cache: "no-store",
-      },
+    const neynarUrl = new URL(
+      "https://api.neynar.com/v2/farcaster/user/bulk-by-address",
     );
+    neynarUrl.searchParams.set("addresses", address.toLowerCase());
+    neynarUrl.searchParams.set(
+      "address_types",
+      "custody_address,verified_address",
+    );
+
+    const res = await fetch(neynarUrl, {
+      headers: {
+        accept: "application/json",
+        "x-api-key": apiKey,
+        "api_key": apiKey,
+      },
+      cache: "no-store",
+    });
 
     if (!res.ok) {
       if (res.status === 404) {
@@ -47,16 +54,32 @@ export async function GET(request: NextRequest) {
       pfp_url?: string | null;
     };
 
+    type RawUserEnvelope = {
+      user?: NeynarUser | null;
+      address?: string | null;
+      custody_address?: string | null;
+    } & Partial<NeynarUser>;
+
     const data = (await res.json()) as {
       result?: {
-        users?: Array<{
-          user?: NeynarUser | null;
-          address?: string;
-        }>;
+        users?: RawUserEnvelope[];
       };
     };
 
-    const user = data.result?.users?.[0]?.user ?? null;
+    const lowerAddress = address.toLowerCase();
+
+    const envelope =
+      data.result?.users?.find((candidate) => {
+        const candidateAddresses = [
+          candidate.address,
+          candidate.custody_address,
+        ]
+          .filter((entry): entry is string => !!entry)
+          .map((entry) => entry.toLowerCase());
+        return candidateAddresses.includes(lowerAddress);
+      }) ?? data.result?.users?.[0];
+
+    const user = envelope?.user ?? envelope ?? null;
 
     if (!user) {
       return NextResponse.json({ user: null });
