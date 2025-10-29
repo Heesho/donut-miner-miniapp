@@ -588,7 +588,7 @@ export default function HomePage() {
           </div>
 
           <div className="mt-auto">
-            <p className="mt-3 px-2 text-center text-[11px] leading-snug text-gray-400">
+            <p className="mt-3 text-center text-[11px] leading-snug text-gray-400">
               Pay the glaze price to become the King Glazer. Earn $DONUT every
               second until another player glazes the donut. 80% of their payment
               goes back to you.
