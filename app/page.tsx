@@ -340,8 +340,7 @@ export default function HomePage() {
         ? contextPrimaryLabel
         : addressLabel;
 
-    const secondary =
-      hasProfile || (isYou && contextPrimaryLabel) ? addressLabel : "";
+    const secondary = "";
 
     const avatarUrl = hasProfile
       ? profile?.pfpUrl ?? (isYou ? contextProfile?.pfpUrl ?? null : null)
@@ -472,12 +471,7 @@ export default function HomePage() {
                   KING GLAZER
                 </div>
                 <div className="flex items-center gap-2">
-                  <Avatar
-                    className={cn(
-                      "h-8 w-8 border border-zinc-800",
-                      occupantDisplay.isYou && "border-pink-500",
-                    )}
-                  >
+                  <Avatar className="h-8 w-8">
                     {occupantDisplay.avatarUrl ? (
                       <AvatarImage
                         src={occupantDisplay.avatarUrl}
