@@ -165,11 +165,7 @@ export default function HomePage() {
     });
   }, [connectAsync, isConnected, isConnecting, primaryConnector]);
 
-  const {
-    data: rawMinerState,
-    isFetching: isLoadingState,
-    refetch: refetchMinerState,
-  } = useReadContract({
+  const { data: rawMinerState, refetch: refetchMinerState } = useReadContract({
     address: CONTRACT_ADDRESSES.multicall,
     abi: MULTICALL_ABI,
     functionName: "getMiner",
@@ -376,13 +372,12 @@ export default function HomePage() {
       : "—";
 
   const buttonLabel = useMemo(() => {
-    if (!minerState || isLoadingState) return "Loading…";
-    if (minerState.price === 0n) return "Claim the Throne";
-    return `Glaze ${glazePriceDisplay}`;
-  }, [glazePriceDisplay, isLoadingState, minerState]);
+    if (!minerState) return "Loading…";
+    return "GLAZE";
+  }, [minerState]);
 
   const isGlazeDisabled =
-    !minerState || isLoadingState || isWriting || isConfirming || isConnecting;
+    !minerState || isWriting || isConfirming;
 
   const statusMessage = useMemo(() => {
     if (isWriting) return "Confirm the transaction in your wallet…";
