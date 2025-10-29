@@ -22,6 +22,7 @@ import {
   MINER_ABI,
   MULTICALL_ABI,
 } from "@/lib/contracts";
+import { cn } from "@/lib/utils";
 
 type MiniAppContext = {
   user?: {
@@ -309,10 +310,12 @@ export default function HomePage() {
         secondary: "",
         isYou: false,
         avatarUrl: null as string | null,
+        isUnknown: true,
+        addressLabel: "—",
       };
     }
-    const trimmedUri = minerState.uri?.trim();
     const minerAddr = minerState.miner;
+    const fallback = formatAddress(minerAddr);
     const isYou =
       !!address &&
       minerAddr.toLowerCase() === (address as string).toLowerCase();
@@ -321,34 +324,30 @@ export default function HomePage() {
     const profileUsername = profile?.username
       ? `@${profile.username}`
       : undefined;
-    const fallback = formatAddress(minerAddr);
 
-    const primary =
-      profile?.displayName ??
-      profile?.username ??
-      trimmedUri ??
-      (isYou ? "You" : fallback);
+    const hasProfile = !!profile;
 
-    let secondary: string | undefined =
-      profile?.displayName && profileUsername
-        ? profileUsername
-        : profile?.username && primary !== profileUsername
-          ? profileUsername
-          : trimmedUri && trimmedUri !== primary
-            ? trimmedUri
-            : !isYou && fallback !== primary
-              ? fallback
-              : undefined;
+    const addressLabel = fallback;
 
-    if (secondary === primary) secondary = undefined;
+    const primary = hasProfile
+      ? profile?.displayName ?? profile?.username ?? addressLabel
+      : addressLabel;
+
+    const secondary = hasProfile ? profileUsername ?? addressLabel : "";
+
+    const avatarUrl = hasProfile
+      ? profile?.pfpUrl ?? (isYou ? context?.user?.pfpUrl ?? null : null)
+      : null;
 
     return {
       primary,
-      secondary: secondary ?? "",
+      secondary,
       isYou,
-      avatarUrl: profile?.pfpUrl ?? null,
+      avatarUrl,
+      isUnknown: !hasProfile,
+      addressLabel,
     };
-  }, [address, minerState, neynarUser?.user]);
+  }, [address, context?.user?.pfpUrl, minerState, neynarUser?.user]);
 
   const glazeRateDisplay = minerState
     ? formatTokenAmount(minerState.nextDps, DONUT_DECIMALS, 4)
@@ -359,6 +358,12 @@ export default function HomePage() {
   const glazedDisplay = minerState
     ? `🍩${formatTokenAmount(minerState.glazed, DONUT_DECIMALS, 2)}`
     : "🍩—";
+
+  const occupantInitialsSource = occupantDisplay.addressLabel;
+
+  const occupantFallbackInitials = occupantDisplay.isUnknown
+    ? "?"
+    : initialsFrom(occupantInitialsSource);
 
   const donutBalanceDisplay =
     minerState && minerState.donutBalance !== undefined
@@ -429,13 +434,31 @@ export default function HomePage() {
           </div>
 
           <div className="mt-2 grid grid-cols-2 gap-2">
-            <Card className="border-zinc-800 bg-black">
+            <Card
+              className={cn(
+                "border-zinc-800 bg-black transition-shadow",
+                occupantDisplay.isYou &&
+                  "border-pink-500 shadow-[0_0_20px_-5px_rgba(236,72,153,0.8)] animate-glow",
+              )}
+            >
               <CardContent className="grid gap-1.5 p-2.5">
-                <div className="text-[10px] font-bold uppercase tracking-[0.08em] text-gray-400">
+                <div
+                  className={cn(
+                    "text-[10px] font-bold uppercase tracking-[0.08em]",
+                    occupantDisplay.isYou
+                      ? "text-pink-400"
+                      : "text-gray-400",
+                  )}
+                >
                   KING GLAZER
                 </div>
                 <div className="flex items-center gap-2">
-                  <Avatar className="h-8 w-8 border border-zinc-800">
+                  <Avatar
+                    className={cn(
+                      "h-8 w-8 border border-zinc-800",
+                      occupantDisplay.isYou && "border-pink-500",
+                    )}
+                  >
                     {occupantDisplay.avatarUrl ? (
                       <AvatarImage
                         src={occupantDisplay.avatarUrl}
@@ -445,12 +468,7 @@ export default function HomePage() {
                     ) : null}
                     <AvatarFallback className="bg-zinc-800 text-white text-xs uppercase">
                       {minerState ? (
-                        initialsFrom(
-                          occupantDisplay.primary === "You"
-                            ? context?.user?.displayName ??
-                                context?.user?.username
-                            : occupantDisplay.primary,
-                        )
+                        occupantFallbackInitials
                       ) : (
                         <CircleUserRound className="h-4 w-4" />
                       )}
@@ -459,11 +477,6 @@ export default function HomePage() {
                   <div className="leading-tight text-left">
                     <div className="flex items-center gap-1 text-sm text-white">
                       <span>{occupantDisplay.primary}</span>
-                      {occupantDisplay.isYou && (
-                        <span className="rounded-full bg-pink-500/20 px-2 py-[2px] text-[10px] font-semibold uppercase tracking-wide text-pink-400">
-                          You
-                        </span>
-                      )}
                     </div>
                     {occupantDisplay.secondary ? (
                       <div className="text-[11px] text-gray-400">

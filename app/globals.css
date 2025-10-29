@@ -13,3 +13,17 @@ body {
   color: #fff;
   overflow: hidden;
 }
+
+@keyframes glow-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 18px rgba(236, 72, 153, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 28px rgba(236, 72, 153, 0.7);
+  }
+}
+
+.animate-glow {
+  animation: glow-pulse 1.8s ease-in-out infinite;
+}
