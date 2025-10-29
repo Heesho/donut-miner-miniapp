@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const response = await client.fetchBulkUsersByEthOrSolAddress({
+    const response = await client.fetchBulkUsersByEthereumAddress({
       addresses: [address],
     });
 
