@@ -386,19 +386,11 @@ export default function HomePage() {
 
   const statusMessage = useMemo(() => {
     if (isWriting) return "Confirm the transaction in your wallet…";
-    if (isConnecting) return "Connecting to your Farcaster wallet…";
     if (isConfirming) return "Waiting for Base confirmation…";
     if (receipt?.status === "success") return "You glazed the donut!";
     if (receipt?.status === "reverted") return "Transaction reverted.";
     return localStatus ?? getErrorMessage(writeError);
-  }, [
-    isConfirming,
-    isConnecting,
-    isWriting,
-    localStatus,
-    receipt,
-    writeError,
-  ]);
+  }, [isConfirming, isWriting, localStatus, receipt, writeError]);
 
   const userDisplayName =
     context?.user?.displayName ?? context?.user?.username ?? "Farcaster user";
