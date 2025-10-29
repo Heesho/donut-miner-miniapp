@@ -397,7 +397,7 @@ export default function HomePage() {
   return (
     <main className="flex h-screen w-screen justify-center overflow-hidden bg-black font-mono text-white">
       <div
-        className="relative flex h-full w-full max-w-[520px] flex-1 flex-col rounded-[28px] bg-black px-4 pb-4 shadow-inner"
+        className="relative flex h-full w-full max-w-[520px] flex-1 flex-col overflow-hidden rounded-[28px] bg-black px-4 pb-4 shadow-inner"
         style={{
           paddingTop: "calc(env(safe-area-inset-top, 0px) + 8px)",
           paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 8px)",
@@ -499,7 +499,7 @@ export default function HomePage() {
             />
           </div>
 
-          <div className="mt-2 flex flex-col gap-3">
+          <div className="mt-2 flex flex-col gap-3 pb-3">
             <div className="grid grid-cols-2 gap-2">
               <Card className="border-zinc-800 bg-black">
                 <CardContent className="grid gap-1.5 p-2.5">
@@ -556,11 +556,13 @@ export default function HomePage() {
             </div>
           </div>
 
-          <p className="mt-3 px-1 text-center text-[11px] leading-snug text-gray-400">
-            Pay the glaze price to become the King Glazer. Earn $DONUT every
-            second until another player glazes the donut. 80% of their payment
-            goes back to you.
-          </p>
+          <div className="mt-auto">
+            <p className="mt-3 px-1 text-center text-[11px] leading-snug text-gray-400">
+              Pay the glaze price to become the King Glazer. Earn $DONUT every
+              second until another player glazes the donut. 80% of their payment
+              goes back to you.
+            </p>
+          </div>
         </div>
       </div>
     </main>
