@@ -27,21 +27,21 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const response = await client.fetchBulkUsersByEthereumAddress({
-      addresses: [address],
-    });
+    const response = (await client.fetchBulkUsersByEthereumAddress([
+      address,
+    ])) as unknown;
 
     const resultUsers =
+      (response as { users?: Array<Record<string, unknown>> }).users ??
       (response as { result?: { users?: Array<Record<string, unknown>> } })
         .result?.users ??
-      (response as { result?: { user?: Record<string, unknown> } }).result?.user
-        ? [
-            (response as { result?: { user?: Record<string, unknown> } }).result
-              ?.user ?? null,
-          ]
-        : [];
+      [];
 
-    const user = resultUsers?.[0] as
+    const fallbackUser = (
+      response as { result?: { user?: Record<string, unknown> } }
+    ).result?.user;
+
+    const user = (resultUsers?.[0] ?? fallbackUser) as
       | {
           fid?: number;
           username?: string;
