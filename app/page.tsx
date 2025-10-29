@@ -351,7 +351,7 @@ export default function HomePage() {
   }, [address, minerState, neynarUser?.user]);
 
   const glazeRateDisplay = minerState
-    ? formatTokenAmount(minerState.dps, DONUT_DECIMALS, 4)
+    ? formatTokenAmount(minerState.nextDps, DONUT_DECIMALS, 4)
     : "—";
   const glazePriceDisplay = minerState
     ? `Ξ${formatEth(minerState.price, minerState.price === 0n ? 0 : 5)}`
@@ -440,6 +440,7 @@ export default function HomePage() {
                       <AvatarImage
                         src={occupantDisplay.avatarUrl}
                         alt={occupantDisplay.primary}
+                        className="object-cover"
                       />
                     ) : null}
                     <AvatarFallback className="bg-zinc-800 text-white text-xs uppercase">
@@ -486,81 +487,81 @@ export default function HomePage() {
             </Card>
           </div>
 
-          <div className="flex flex-1 items-center">
-            <div className="-mx-4 w-[calc(100%+2rem)] overflow-hidden">
-              <video
-                className="aspect-[16/9] w-full object-cover"
-                autoPlay
-                loop
-                muted
-                playsInline
-                preload="auto"
-                src="/media/donut-loop.mp4"
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-3">
-          <div className="grid grid-cols-2 gap-2">
-            <Card className="border-zinc-800 bg-black">
-              <CardContent className="grid gap-1.5 p-2.5">
-                <div className="text-[10px] font-bold uppercase tracking-[0.08em] text-gray-400">
-                  GLAZE RATE
-                </div>
-                <div className="text-2xl font-semibold text-white">
-                  🍩{glazeRateDisplay}
-                  <span className="text-xs text-gray-400"> /s</span>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-zinc-800 bg-black">
-              <CardContent className="grid gap-1.5 p-2.5">
-                <div className="text-[10px] font-bold uppercase tracking-[0.08em] text-gray-400">
-                  GLAZE PRICE
-                </div>
-                <div className="text-2xl font-semibold text-pink-400">
-                  {glazePriceDisplay}
-                </div>
-              </CardContent>
-            </Card>
+          <div className="mt-2 -mx-4 w-[calc(100%+2rem)] overflow-hidden">
+            <video
+              className="aspect-[16/9] w-full object-cover"
+              autoPlay
+              loop
+              muted
+              playsInline
+              preload="auto"
+              src="/media/donut-loop.mp4"
+            />
           </div>
 
-          <Button
-            className="w-full rounded-2xl bg-pink-500 py-3.5 text-base font-bold text-black shadow-lg transition-colors hover:bg-pink-400 disabled:cursor-not-allowed disabled:bg-pink-500/40"
-            onClick={handleGlaze}
-            disabled={isGlazeDisabled}
-          >
-            {buttonLabel}
-          </Button>
+          <div className="mt-2 flex flex-col gap-3">
+            <div className="grid grid-cols-2 gap-2">
+              <Card className="border-zinc-800 bg-black">
+                <CardContent className="grid gap-1.5 p-2.5">
+                  <div className="text-[10px] font-bold uppercase tracking-[0.08em] text-gray-400">
+                    GLAZE RATE
+                  </div>
+                  <div className="text-2xl font-semibold text-white">
+                    🍩{glazeRateDisplay}
+                    <span className="text-xs text-gray-400"> /s</span>
+                  </div>
+                </CardContent>
+              </Card>
 
-          {statusMessage ? (
-            <p className="text-center text-[11px] text-gray-400">{statusMessage}</p>
-          ) : null}
-
-          <div>
-            <div className="mb-1 text-[11px] uppercase tracking-wide text-gray-400">
-              Your Balances
+              <Card className="border-zinc-800 bg-black">
+                <CardContent className="grid gap-1.5 p-2.5">
+                  <div className="text-[10px] font-bold uppercase tracking-[0.08em] text-gray-400">
+                    GLAZE PRICE
+                  </div>
+                  <div className="text-2xl font-semibold text-pink-400">
+                    {glazePriceDisplay}
+                  </div>
+                </CardContent>
+              </Card>
             </div>
-            <div className="flex justify-between text-[13px] font-semibold">
-              <div className="flex items-center gap-2">
-                <span>🍩</span>
-                <span>{donutBalanceDisplay}</span>
+
+            <Button
+              className="w-full rounded-2xl bg-pink-500 py-3.5 text-base font-bold text-black shadow-lg transition-colors hover:bg-pink-400 disabled:cursor-not-allowed disabled:bg-pink-500/40"
+              onClick={handleGlaze}
+              disabled={isGlazeDisabled}
+            >
+              {buttonLabel}
+            </Button>
+
+            {statusMessage ? (
+              <p className="text-center text-[11px] text-gray-400">
+                {statusMessage}
+              </p>
+            ) : null}
+
+            <div>
+              <div className="mb-1 text-[11px] uppercase tracking-wide text-gray-400">
+                Your Balances
               </div>
-              <div className="flex items-center gap-2">
-                <span>Ξ</span>
-                <span>{ethBalanceDisplay}</span>
+              <div className="flex justify-between text-[13px] font-semibold">
+                <div className="flex items-center gap-2">
+                  <span>🍩</span>
+                  <span>{donutBalanceDisplay}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span>Ξ</span>
+                  <span>{ethBalanceDisplay}</span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <p className="px-1 pt-3 text-center text-[11px] leading-snug text-gray-400">
-          Pay the glaze price to become the King Glazer. Earn $DONUT every
-          second until another player glazes the donut. 80% of their payment goes
-          back to you.
-        </p>
+          <p className="mt-3 px-1 text-center text-[11px] leading-snug text-gray-400">
+            Pay the glaze price to become the King Glazer. Earn $DONUT every
+            second until another player glazes the donut. 80% of their payment
+            goes back to you.
+          </p>
+        </div>
       </div>
     </main>
   );
