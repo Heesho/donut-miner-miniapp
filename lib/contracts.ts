@@ -1,7 +1,7 @@
 export const CONTRACT_ADDRESSES = {
-  donut: "0xEe2A9bc96d7CAB19Bf8B6D2CAd840102dCD8Cd8f",
-  miner: "0x3EE441030984ACfeCf17FDa6953bea00a8c53Fa7",
-  multicall: "0x88e52940E62E150619cAa54b1bc51b1103a2EA9F",
+  donut: "0xC511594e71809f8c13Bdc5E22d5b8Ca0d130D7d5",
+  miner: "0x9E5eA3b8AdDA08dFb918370811c1496b114DF97e",
+  multicall: "0xDbC6028935b3b5b96451C48bD66Eff0918eA59A9",
   provider: "0x7a8C895E7826F66e1094532cB435Da725dc3868f",
 } as const;
 
@@ -87,11 +87,6 @@ export const MULTICALL_ABI = [
 export const MINER_ABI = [
   {
     inputs: [
-      {
-        internalType: "address",
-        name: "miner",
-        type: "address",
-      },
       {
         internalType: "address",
         name: "provider",
