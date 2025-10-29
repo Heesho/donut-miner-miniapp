@@ -33,15 +33,22 @@ export async function GET(request: NextRequest) {
 
     const resultUsers =
       (response as { users?: Array<Record<string, unknown>> }).users ??
-      (response as { result?: { users?: Array<Record<string, unknown>> } })
-        .result?.users ??
+      (response as {
+        result?: { users?: Array<Record<string, unknown>> };
+      }).result?.users ??
       [];
 
     const fallbackUser = (
       response as { result?: { user?: Record<string, unknown> } }
     ).result?.user;
 
-    const user = (resultUsers?.[0] ?? fallbackUser) as
+    const firstEntry = resultUsers?.[0] ?? null;
+    const extracted =
+      (firstEntry &&
+        (("user" in firstEntry ? (firstEntry as { user: unknown }).user : firstEntry))) ||
+      null;
+
+    const user = (extracted ?? fallbackUser) as
       | {
           fid?: number;
           username?: string;
