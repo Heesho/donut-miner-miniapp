@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const res = await fetch(
-      `https://api.neynar.com/v2/farcaster/user/by-verification?address=${address}`,
+      `https://api.neynar.com/v2/farcaster/user/bulk-by-address?addresses=${address}`,
       {
         headers: {
           accept: "application/json",
@@ -44,17 +44,19 @@ export async function GET(request: NextRequest) {
       display_name?: string;
       displayName?: string;
       pfp?: { url?: string | null } | null;
+      pfp_url?: string | null;
     };
 
     const data = (await res.json()) as {
       result?: {
         users?: Array<{
-          user?: NeynarUser;
+          user?: NeynarUser | null;
+          address?: string;
         }>;
       };
     };
 
-    const user = data.result?.users?.[0]?.user;
+    const user = data.result?.users?.[0]?.user ?? null;
 
     if (!user) {
       return NextResponse.json({ user: null });
@@ -65,7 +67,7 @@ export async function GET(request: NextRequest) {
         fid: user.fid ?? null,
         username: user.username ?? null,
         displayName: user.display_name ?? user.displayName ?? null,
-        pfpUrl: user.pfp?.url ?? null,
+        pfpUrl: user.pfp?.url ?? user.pfp_url ?? null,
       },
     });
   } catch (error) {
