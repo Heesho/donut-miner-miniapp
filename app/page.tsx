@@ -47,6 +47,8 @@ type MinerState = {
   donutBalance: bigint;
 };
 
+type GlazeState = "idle" | "pending" | "success" | "failure";
+
 const DONUT_DECIMALS = 18;
 const DEADLINE_BUFFER_SECONDS = 15 * 60;
 
@@ -93,27 +95,27 @@ const initialsFrom = (label?: string) => {
   return stripped.slice(0, 2).toUpperCase();
 };
 
-const getErrorMessage = (error: unknown) => {
-  if (!error) return null;
-  if (typeof error === "string") return error;
-  if (error instanceof Error) {
-    const [firstLine] = error.message.split("\n");
-    return firstLine;
-  }
-  if (typeof error === "object" && error !== null) {
-    const maybeShort =
-      (error as { shortMessage?: string }).shortMessage ??
-      (error as { message?: string }).message;
-    if (maybeShort) return maybeShort;
-  }
-  return "Transaction failed. Please try again.";
-};
-
 export default function HomePage() {
   const readyRef = useRef(false);
   const autoConnectAttempted = useRef(false);
   const [context, setContext] = useState<MiniAppContext | null>(null);
-  const [localStatus, setLocalStatus] = useState<string | null>(null);
+  const [glazeState, setGlazeState] = useState<GlazeState>("idle");
+  const glazeResetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+  const updateGlazeState = useCallback((next: GlazeState) => {
+    if (glazeResetTimeoutRef.current) {
+      clearTimeout(glazeResetTimeoutRef.current);
+      glazeResetTimeoutRef.current = null;
+    }
+    setGlazeState(next);
+    if (next === "success" || next === "failure") {
+      glazeResetTimeoutRef.current = setTimeout(() => {
+        setGlazeState("idle");
+        glazeResetTimeoutRef.current = null;
+      }, 3000);
+    }
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -132,6 +134,14 @@ export default function HomePage() {
     hydrateContext();
     return () => {
       cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (glazeResetTimeoutRef.current) {
+        clearTimeout(glazeResetTimeoutRef.current);
+      }
     };
   }, []);
 
@@ -195,7 +205,6 @@ export default function HomePage() {
     writeContract,
     isPending: isWriting,
     reset: resetWrite,
-    error: writeError,
   } = useWriteContract();
 
   const {
@@ -209,6 +218,7 @@ export default function HomePage() {
   useEffect(() => {
     if (!receipt) return;
     if (receipt.status === "success" || receipt.status === "reverted") {
+      updateGlazeState(receipt.status === "success" ? "success" : "failure");
       refetchMinerState();
       const resetTimer = setTimeout(() => {
         resetWrite();
@@ -216,7 +226,7 @@ export default function HomePage() {
       return () => clearTimeout(resetTimer);
     }
     return;
-  }, [receipt, refetchMinerState, resetWrite]);
+  }, [receipt, refetchMinerState, resetWrite, updateGlazeState]);
 
   const minerAddress = minerState?.miner ?? zeroAddress;
   const hasMiner = minerAddress !== zeroAddress;
@@ -253,7 +263,7 @@ export default function HomePage() {
 
   const handleGlaze = useCallback(async () => {
     if (!minerState) return;
-    setLocalStatus(null);
+    updateGlazeState("pending");
     try {
       let targetAddress = address;
       if (!targetAddress) {
@@ -292,7 +302,8 @@ export default function HomePage() {
       });
     } catch (error) {
       console.error("Failed to glaze:", error);
-      setLocalStatus(getErrorMessage(error));
+      updateGlazeState("failure");
+      resetWrite();
     }
   }, [
     address,
@@ -300,6 +311,8 @@ export default function HomePage() {
     context?.user?.username,
     minerState,
     primaryConnector,
+    resetWrite,
+    updateGlazeState,
     writeContract,
   ]);
 
@@ -394,19 +407,17 @@ export default function HomePage() {
 
   const buttonLabel = useMemo(() => {
     if (!minerState) return "Loading…";
+    if (glazeState === "success") return "SUCCESS";
+    if (glazeState === "failure") return "FAILURE";
+    if (glazeState === "pending" || isWriting || isConfirming) {
+      return "GLAZING…";
+    }
     return "GLAZE";
-  }, [minerState]);
+  }, [glazeState, isConfirming, isWriting, minerState]);
 
-  const isGlazeDisabled =
-    !minerState || isWriting || isConfirming;
-
-  const statusMessage = useMemo(() => {
-    if (isWriting) return "Confirm the transaction in your wallet…";
-    if (isConfirming) return "Waiting for Base confirmation…";
-    if (receipt?.status === "success") return "You glazed the donut!";
-    if (receipt?.status === "reverted") return "Transaction reverted.";
-    return localStatus ?? getErrorMessage(writeError);
-  }, [isConfirming, isWriting, localStatus, receipt, writeError]);
+  const isGlazeProcessing =
+    glazeState !== "idle" || isWriting || isConfirming;
+  const isGlazeDisabled = !minerState || isGlazeProcessing;
 
   const userDisplayName =
     context?.user?.displayName ?? context?.user?.username ?? "Farcaster user";
@@ -420,7 +431,7 @@ export default function HomePage() {
   return (
     <main className="flex h-screen w-screen justify-center overflow-hidden bg-black font-mono text-white">
       <div
-        className="relative flex h-full w-full max-w-[520px] flex-1 flex-col overflow-hidden rounded-[28px] bg-black px-4 pb-4 shadow-inner"
+        className="relative flex h-full w-full max-w-[520px] flex-1 flex-col overflow-hidden rounded-[28px] bg-black px-2 pb-4 shadow-inner"
         style={{
           paddingTop: "calc(env(safe-area-inset-top, 0px) + 8px)",
           paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 8px)",
@@ -456,7 +467,7 @@ export default function HomePage() {
               className={cn(
                 "border-zinc-800 bg-black transition-shadow",
                 occupantDisplay.isYou &&
-                  "border-pink-500 shadow-[0_0_20px_-5px_rgba(236,72,153,0.8)] animate-glow",
+                  "border-pink-500 shadow-[inset_0_0_24px_rgba(236,72,153,0.55)] animate-glow",
               )}
             >
               <CardContent className="grid gap-1.5 p-2.5">
@@ -513,7 +524,7 @@ export default function HomePage() {
             </Card>
           </div>
 
-          <div className="mt-2 -mx-4 w-[calc(100%+2rem)] overflow-hidden">
+          <div className="mt-2 -mx-2 w-[calc(100%+1rem)] overflow-hidden">
             <video
               className="aspect-[16/9] w-full object-cover"
               autoPlay
@@ -558,12 +569,6 @@ export default function HomePage() {
             >
               {buttonLabel}
             </Button>
-
-            {statusMessage ? (
-              <p className="text-center text-[11px] text-gray-400">
-                {statusMessage}
-              </p>
-            ) : null}
 
             <div>
               <div className="mb-1 text-[11px] uppercase tracking-wide text-gray-400">
