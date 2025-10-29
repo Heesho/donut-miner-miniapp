@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Configuration, NeynarAPIClient } from "@neynar/nodejs-sdk";
+import { NeynarAPIClient } from "@neynar/nodejs-sdk";
 
 const apiKey = process.env.NEYNAR_API_KEY;
 
 const client =
   apiKey != null
-    ? new NeynarAPIClient(new Configuration({ apiKey }))
+    ? new NeynarAPIClient({ apiKey })
     : null;
 
 export async function GET(request: NextRequest) {
