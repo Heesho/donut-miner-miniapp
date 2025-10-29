@@ -13,7 +13,7 @@ const miniAppEmbed = {
     title: "Enter the mine",
     action: {
       type: "launch_miniapp" as const,
-      name: "Donut Miner",
+      name: "We Glaze The World",
       url: appDomain,
       splashImageUrl,
       splashBackgroundColor: "#FEE7EC",
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
   title: "We Glaze The World",
   description: "Claim the glaze factory and earn donuts on Base.",
   openGraph: {
-    title: "Donut Miner",
+    title: "We Glaze The World",
     description: "Race the hive to control the donut mine and keep the glaze flowing.",
     url: appDomain,
     images: [

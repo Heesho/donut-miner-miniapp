@@ -6,7 +6,7 @@
   },
   "miniapp": {
     "version": "1",
-    "name": "Donut Miner",
+    "name": "We Glaze The World",
     "tagline": "Claim the glaze factory and earn donuts on Base.",
     "description": "Command Glaze Corp's donut mine, compete for control, and keep the rewards flowing on Base.",
     "iconUrl": "https://glazecorp.vercel.app/media/icon.png",
@@ -14,7 +14,7 @@
     "splashImageUrl": "https://glazecorp.vercel.app/media/icon.png",
     "splashBackgroundColor": "#FEE7EC",
     "heroImageUrl": "https://glazecorp.vercel.app/media/hero.png",
-    "ogTitle": "Donut Miner",
+    "ogTitle": "We Glaze The World",
     "ogDescription": "Race the rink to seize the donut mine and keep the glaze flowing.",
     "ogImageUrl": "https://glazecorp.vercel.app/media/hero.png",
     "requiredChains": [
