@@ -330,10 +330,10 @@ export default function HomePage() {
     const addressLabel = fallback;
 
     const primary = hasProfile
-      ? profile?.displayName ?? profile?.username ?? addressLabel
+      ? profileUsername ?? profile?.displayName ?? addressLabel
       : addressLabel;
 
-    const secondary = hasProfile ? profileUsername ?? addressLabel : "";
+    const secondary = hasProfile ? addressLabel : "";
 
     const avatarUrl = hasProfile
       ? profile?.pfpUrl ?? (isYou ? context?.user?.pfpUrl ?? null : null)
@@ -359,10 +359,12 @@ export default function HomePage() {
     ? `🍩${formatTokenAmount(minerState.glazed, DONUT_DECIMALS, 2)}`
     : "🍩—";
 
-  const occupantInitialsSource = occupantDisplay.addressLabel;
+  const occupantInitialsSource = occupantDisplay.isUnknown
+    ? occupantDisplay.addressLabel
+    : occupantDisplay.primary || occupantDisplay.addressLabel;
 
   const occupantFallbackInitials = occupantDisplay.isUnknown
-    ? "?"
+    ? (occupantInitialsSource?.slice(-2) ?? "??").toUpperCase()
     : initialsFrom(occupantInitialsSource);
 
   const donutBalanceDisplay =

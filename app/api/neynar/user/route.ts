@@ -1,12 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { NeynarAPIClient } from "@neynar/nodejs-sdk";
-
 const apiKey = process.env.NEYNAR_API_KEY;
-
-const client =
-  apiKey != null
-    ? new NeynarAPIClient(apiKey)
-    : null;
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -19,7 +12,7 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  if (!client) {
+  if (!apiKey) {
     return NextResponse.json(
       { error: "Neynar API key not configured." },
       { status: 503 },
@@ -27,37 +20,41 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const response = (await client.fetchBulkUsersByEthereumAddress([
-      address,
-    ])) as unknown;
+    const res = await fetch(
+      `https://api.neynar.com/v2/farcaster/user/by-verification?address=${address}`,
+      {
+        headers: {
+          accept: "application/json",
+          "api_key": apiKey,
+        },
+        cache: "no-store",
+      },
+    );
 
-    const resultUsers =
-      (response as { users?: Array<Record<string, unknown>> }).users ??
-      (response as {
-        result?: { users?: Array<Record<string, unknown>> };
-      }).result?.users ??
-      [];
+    if (!res.ok) {
+      if (res.status === 404) {
+        return NextResponse.json({ user: null });
+      }
+      throw new Error(`Neynar request failed with ${res.status}`);
+    }
 
-    const fallbackUser = (
-      response as { result?: { user?: Record<string, unknown> } }
-    ).result?.user;
+    type NeynarUser = {
+      fid?: number;
+      username?: string;
+      display_name?: string;
+      displayName?: string;
+      pfp?: { url?: string | null } | null;
+    };
 
-    const firstEntry = resultUsers?.[0] ?? null;
-    const extracted =
-      (firstEntry &&
-        (("user" in firstEntry ? (firstEntry as { user: unknown }).user : firstEntry))) ||
-      null;
+    const data = (await res.json()) as {
+      result?: {
+        users?: Array<{
+          user?: NeynarUser;
+        }>;
+      };
+    };
 
-    const user = (extracted ?? fallbackUser) as
-      | {
-          fid?: number;
-          username?: string;
-          displayName?: string;
-          pfp?: { url?: string | null } | null;
-          pfp_url?: string | null;
-        }
-      | null
-      | undefined;
+    const user = data.result?.users?.[0]?.user;
 
     if (!user) {
       return NextResponse.json({ user: null });
@@ -67,8 +64,8 @@ export async function GET(request: NextRequest) {
       user: {
         fid: user.fid ?? null,
         username: user.username ?? null,
-        displayName: user.displayName ?? null,
-        pfpUrl: user.pfp?.url ?? user.pfp_url ?? null,
+        displayName: user.display_name ?? user.displayName ?? null,
+        pfpUrl: user.pfp?.url ?? null,
       },
     });
   } catch (error) {
