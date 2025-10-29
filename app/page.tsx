@@ -1,18 +1,349 @@
 "use client";
 
-import { useEffect } from "react";
-import { CircleUserRound } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { sdk } from "@farcaster/miniapp-sdk";
+import { CircleUserRound } from "lucide-react";
+import {
+  useAccount,
+  useConnect,
+  useReadContract,
+  useWaitForTransactionReceipt,
+  useWriteContract,
+} from "wagmi";
+import { base } from "wagmi/chains";
+import {
+  formatEther,
+  formatUnits,
+  zeroAddress,
+  type Address,
+} from "viem";
+
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  CONTRACT_ADDRESSES,
+  MINER_ABI,
+  MULTICALL_ABI,
+} from "@/lib/contracts";
+
+type MiniAppContext = {
+  user?: {
+    fid: number;
+    username?: string;
+    displayName?: string;
+  };
+};
+
+type MinerState = {
+  epochId: bigint | number;
+  initPrice: bigint;
+  startTime: bigint | number;
+  glazed: bigint;
+  price: bigint;
+  dps: bigint;
+  nextDps: bigint;
+  miner: Address;
+  uri: string;
+  ethBalance: bigint;
+  donutBalance: bigint;
+};
+
+const DONUT_DECIMALS = 18;
+const DEADLINE_BUFFER_SECONDS = 15 * 60;
+
+const toBigInt = (value: bigint | number) =>
+  typeof value === "bigint" ? value : BigInt(value);
+
+const formatTokenAmount = (
+  value: bigint,
+  decimals: number,
+  maximumFractionDigits = 2,
+) => {
+  if (value === 0n) return "0";
+  const asNumber = Number(formatUnits(value, decimals));
+  if (!Number.isFinite(asNumber)) {
+    return formatUnits(value, decimals);
+  }
+  return asNumber.toLocaleString(undefined, {
+    maximumFractionDigits,
+  });
+};
+
+const formatEth = (value: bigint, maximumFractionDigits = 4) => {
+  if (value === 0n) return "0";
+  const asNumber = Number(formatEther(value));
+  if (!Number.isFinite(asNumber)) {
+    return formatEther(value);
+  }
+  return asNumber.toLocaleString(undefined, {
+    maximumFractionDigits,
+  });
+};
+
+const formatAddress = (addr?: string) => {
+  if (!addr) return "—";
+  const normalized = addr.toLowerCase();
+  if (normalized === zeroAddress) return "No miner";
+  return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
+};
+
+const initialsFrom = (label?: string) => {
+  if (!label) return "";
+  const stripped = label.replace(/[^a-zA-Z0-9]/g, "");
+  if (!stripped) return label.slice(0, 2).toUpperCase();
+  return stripped.slice(0, 2).toUpperCase();
+};
+
+const getErrorMessage = (error: unknown) => {
+  if (!error) return null;
+  if (typeof error === "string") return error;
+  if (error instanceof Error) {
+    const [firstLine] = error.message.split("\n");
+    return firstLine;
+  }
+  if (typeof error === "object" && error !== null) {
+    const maybeShort =
+      (error as { shortMessage?: string }).shortMessage ??
+      (error as { message?: string }).message;
+    if (maybeShort) return maybeShort;
+  }
+  return "Transaction failed. Please try again.";
+};
 
 export default function HomePage() {
+  const readyRef = useRef(false);
+  const [context, setContext] = useState<MiniAppContext | null>(null);
+  const [localStatus, setLocalStatus] = useState<string | null>(null);
+  const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
+
   useEffect(() => {
-    sdk.actions.ready().catch(() => {
-      // Ignore errors during local development where the SDK may be unavailable.
-    });
+    try {
+      setContext((sdk.context ?? null) as MiniAppContext | null);
+    } catch {
+      setContext(null);
+    }
   }, []);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setNow(Math.floor(Date.now() / 1000));
+    }, 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (!readyRef.current) {
+        readyRef.current = true;
+        sdk.actions.ready().catch(() => {});
+      }
+    }, 1200);
+    return () => clearTimeout(timeout);
+  }, []);
+
+  const { address, isConnected } = useAccount();
+  const { connectors, connectAsync, isPending: isConnecting } = useConnect();
+  const primaryConnector = connectors[0];
+
+  const {
+    data: rawMinerState,
+    isFetching: isLoadingState,
+    refetch: refetchMinerState,
+  } = useReadContract({
+    address: CONTRACT_ADDRESSES.multicall,
+    abi: MULTICALL_ABI,
+    functionName: "getMiner",
+    args: [address ?? zeroAddress],
+    chainId: base.id,
+    query: {
+      refetchInterval: 15_000,
+    },
+  });
+
+  const minerState = useMemo(() => {
+    if (!rawMinerState) return undefined;
+    return rawMinerState as unknown as MinerState;
+  }, [rawMinerState]);
+
+  useEffect(() => {
+    if (!readyRef.current && minerState) {
+      readyRef.current = true;
+      sdk.actions.ready().catch(() => {});
+    }
+  }, [minerState]);
+
+  const {
+    data: txHash,
+    writeContract,
+    isPending: isWriting,
+    reset: resetWrite,
+    error: writeError,
+  } = useWriteContract();
+
+  const {
+    data: receipt,
+    isLoading: isConfirming,
+  } = useWaitForTransactionReceipt({
+    hash: txHash,
+    chainId: base.id,
+  });
+
+  useEffect(() => {
+    if (!receipt) return;
+    if (receipt.status === "success" || receipt.status === "reverted") {
+      refetchMinerState();
+      const resetTimer = setTimeout(() => {
+        resetWrite();
+      }, 500);
+      return () => clearTimeout(resetTimer);
+    }
+    return;
+  }, [receipt, refetchMinerState, resetWrite]);
+
+  const currentGlazed = useMemo(() => {
+    if (!minerState) return 0n;
+    const startTime = toBigInt(minerState.startTime);
+    const nowBigInt = BigInt(now);
+    if (nowBigInt <= startTime) return 0n;
+    const elapsed = nowBigInt - startTime;
+    return minerState.dps * elapsed;
+  }, [minerState, now]);
+
+  const handleGlaze = useCallback(async () => {
+    if (!minerState) return;
+    setLocalStatus(null);
+    try {
+      let targetAddress = address;
+      if (!targetAddress) {
+        if (!primaryConnector) {
+          throw new Error("Wallet connector not available yet.");
+        }
+        const result = await connectAsync({
+          connector: primaryConnector,
+          chainId: base.id,
+        });
+        targetAddress = result.accounts[0];
+      }
+      if (!targetAddress) {
+        throw new Error("Unable to determine wallet address.");
+      }
+      const price = minerState.price;
+      const epochId = toBigInt(minerState.epochId);
+      const deadline = BigInt(Math.floor(Date.now() / 1000) + DEADLINE_BUFFER_SECONDS);
+      const maxPrice = price === 0n ? 0n : (price * 105n) / 100n;
+      await writeContract({
+        address: CONTRACT_ADDRESSES.miner,
+        abi: MINER_ABI,
+        functionName: "mine",
+        args: [
+          targetAddress,
+          CONTRACT_ADDRESSES.provider,
+          epochId,
+          deadline,
+          maxPrice,
+          context?.user?.username ? `@${context.user.username}` : "",
+        ],
+        value: price,
+        chainId: base.id,
+      });
+    } catch (error) {
+      console.error("Failed to glaze:", error);
+      setLocalStatus(getErrorMessage(error));
+    }
+  }, [
+    address,
+    connectAsync,
+    context?.user?.username,
+    minerState,
+    primaryConnector,
+    setLocalStatus,
+    writeContract,
+  ]);
+
+  const occupantDisplay = useMemo(() => {
+    if (!minerState) {
+      return {
+        primary: "—",
+        secondary: "",
+        isYou: false,
+      };
+    }
+    const trimmedUri = minerState.uri?.trim();
+    const minerAddress = minerState.miner;
+    const isYou =
+      !!address &&
+      minerAddress.toLowerCase() === (address as string).toLowerCase();
+    const fallback = formatAddress(minerAddress);
+    const primary = trimmedUri || (isYou ? "You" : fallback);
+    const secondary =
+      trimmedUri && trimmedUri !== fallback ? fallback : isYou ? fallback : "";
+    return {
+      primary,
+      secondary,
+      isYou,
+    };
+  }, [address, minerState]);
+
+  const glazeRateDisplay = minerState
+    ? formatTokenAmount(minerState.dps, DONUT_DECIMALS, 4)
+    : "—";
+  const nextRateDisplay = minerState
+    ? formatTokenAmount(minerState.nextDps, DONUT_DECIMALS, 4)
+    : "—";
+  const glazePriceDisplay = minerState
+    ? `Ξ${formatEth(minerState.price, minerState.price === 0n ? 0 : 5)}`
+    : "Ξ—";
+  const glazedDisplay = minerState
+    ? `🍩${formatTokenAmount(currentGlazed, DONUT_DECIMALS, 2)}`
+    : "🍩—";
+
+  const donutBalanceDisplay =
+    isConnected && minerState
+      ? formatTokenAmount(minerState.donutBalance, DONUT_DECIMALS, 2)
+      : "—";
+  const ethBalanceDisplay =
+    isConnected && minerState
+      ? formatEth(minerState.ethBalance, 4)
+      : "—";
+
+  const buttonLabel = useMemo(() => {
+    if (!minerState || isLoadingState) return "Loading…";
+    if (!isConnected) return "Connect & Glaze";
+    if (minerState.price === 0n) return "Claim the Throne";
+    return `Glaze ${glazePriceDisplay}`;
+  }, [glazePriceDisplay, isConnected, isLoadingState, minerState]);
+
+  const isGlazeDisabled =
+    !minerState ||
+    isLoadingState ||
+    isWriting ||
+    isConfirming ||
+    isConnecting;
+
+  const statusMessage = useMemo(() => {
+    if (isWriting) return "Confirm the transaction in your wallet…";
+    if (isConnecting) return "Connecting to your Farcaster wallet…";
+    if (isConfirming) return "Waiting for Base confirmation…";
+    if (receipt?.status === "success") return "You glazed the donut!";
+    if (receipt?.status === "reverted") return "Transaction reverted.";
+    return localStatus ?? getErrorMessage(writeError);
+  }, [
+    isConfirming,
+    isConnecting,
+    isWriting,
+    localStatus,
+    receipt,
+    writeError,
+  ]);
+
+  const userDisplayName =
+    context?.user?.displayName ?? context?.user?.username ?? "Guest";
+  const userHandle = context?.user?.username
+    ? `@${context.user.username}`
+    : context?.user?.fid
+      ? `fid ${context.user.fid}`
+      : "Not signed in";
 
   return (
     <main className="flex h-screen w-screen justify-center overflow-hidden bg-black font-mono text-white">
@@ -29,12 +360,14 @@ export default function HomePage() {
             <div className="flex items-center gap-2 rounded-full bg-black px-3 py-1">
               <Avatar className="h-8 w-8 border border-zinc-800">
                 <AvatarFallback className="bg-zinc-800 text-white">
-                  <CircleUserRound className="h-4 w-4" />
+                  {context?.user
+                    ? initialsFrom(context.user.displayName ?? context.user.username)
+                    : <CircleUserRound className="h-4 w-4" />}
                 </AvatarFallback>
               </Avatar>
               <div className="leading-tight text-left">
-                <div className="text-sm font-bold">heeshillio</div>
-                <div className="text-xs text-gray-400">@heesh</div>
+                <div className="text-sm font-bold">{userDisplayName}</div>
+                <div className="text-xs text-gray-400">{userHandle}</div>
               </div>
             </div>
           </div>
@@ -48,12 +381,29 @@ export default function HomePage() {
                 <div className="flex items-center gap-2">
                   <Avatar className="h-8 w-8 border border-zinc-800">
                     <AvatarFallback className="bg-zinc-800 text-white text-xs uppercase">
-                      fz
+                      {minerState
+                        ? initialsFrom(
+                            occupantDisplay.primary === "You"
+                              ? context?.user?.displayName ?? context?.user?.username
+                              : occupantDisplay.primary,
+                          )
+                        : <CircleUserRound className="h-4 w-4" />}
                     </AvatarFallback>
                   </Avatar>
                   <div className="leading-tight text-left">
-                    <div className="text-sm text-white">fuzboy</div>
-                    <div className="text-[11px] text-gray-400">@fuzy</div>
+                    <div className="flex items-center gap-1 text-sm text-white">
+                      <span>{occupantDisplay.primary}</span>
+                      {occupantDisplay.isYou && (
+                        <span className="rounded-full bg-pink-500/20 px-2 py-[2px] text-[10px] font-semibold uppercase tracking-wide text-pink-400">
+                          You
+                        </span>
+                      )}
+                    </div>
+                    {occupantDisplay.secondary ? (
+                      <div className="text-[11px] text-gray-400">
+                        {occupantDisplay.secondary}
+                      </div>
+                    ) : null}
                   </div>
                 </div>
               </CardContent>
@@ -64,7 +414,9 @@ export default function HomePage() {
                 <div className="text-[10px] font-bold uppercase tracking-[0.08em] text-gray-400">
                   GLAZED
                 </div>
-                <div className="text-2xl font-semibold text-white">🍩535</div>
+                <div className="text-2xl font-semibold text-white">
+                  {glazedDisplay}
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -91,9 +443,12 @@ export default function HomePage() {
                 <div className="text-[10px] font-bold uppercase tracking-[0.08em] text-gray-400">
                   GLAZE RATE
                 </div>
-                <div className="flex items-end gap-0.5">
-                  <div className="text-2xl font-semibold text-white">🍩5</div>
-                  <span className="pb-1 text-xs text-gray-400">/s</span>
+                <div className="text-2xl font-semibold text-white">
+                  🍩{glazeRateDisplay}
+                  <span className="text-xs text-gray-400"> /s</span>
+                </div>
+                <div className="text-[11px] text-gray-500">
+                  Next: 🍩{nextRateDisplay}/s
                 </div>
               </CardContent>
             </Card>
@@ -104,15 +459,28 @@ export default function HomePage() {
                   GLAZE PRICE
                 </div>
                 <div className="text-2xl font-semibold text-pink-400">
-                  Ξ0.012
+                  {glazePriceDisplay}
                 </div>
+                {minerState?.price === 0n ? (
+                  <div className="text-[11px] text-gray-500">
+                    Free to claim this epoch
+                  </div>
+                ) : null}
               </CardContent>
             </Card>
           </div>
 
-          <Button className="w-full rounded-2xl bg-pink-500 py-3.5 text-base font-bold text-black shadow-lg transition-colors hover:bg-pink-400">
-            GLAZE
+          <Button
+            className="w-full rounded-2xl bg-pink-500 py-3.5 text-base font-bold text-black shadow-lg transition-colors hover:bg-pink-400 disabled:cursor-not-allowed disabled:bg-pink-500/40"
+            onClick={handleGlaze}
+            disabled={isGlazeDisabled}
+          >
+            {buttonLabel}
           </Button>
+
+          {statusMessage ? (
+            <p className="text-center text-[11px] text-gray-400">{statusMessage}</p>
+          ) : null}
 
           <div>
             <div className="mb-1 text-[11px] uppercase tracking-wide text-gray-400">
@@ -121,20 +489,20 @@ export default function HomePage() {
             <div className="flex justify-between text-[13px] font-semibold">
               <div className="flex items-center gap-2">
                 <span>🍩</span>
-                <span>343.23</span>
+                <span>{donutBalanceDisplay}</span>
               </div>
               <div className="flex items-center gap-2">
                 <span>Ξ</span>
-                <span>1.334</span>
+                <span>{ethBalanceDisplay}</span>
               </div>
             </div>
           </div>
         </div>
 
         <p className="px-1 pt-3 text-center text-[11px] leading-snug text-gray-400">
-          Pay the Glaze Price to become the King Glazer. Earn $DONUT each second
-          until another player glazes the donut. 80% of their payment goes to
-          you.
+          Pay the glaze price to become the King Glazer. Earn $DONUT every
+          second until another player glazes the donut. 80% of their payment goes
+          back to you.
         </p>
       </div>
     </main>
