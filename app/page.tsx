@@ -28,6 +28,7 @@ type MiniAppContext = {
     fid: number;
     username?: string;
     displayName?: string;
+    pfpUrl?: string;
   };
 };
 
@@ -352,9 +353,6 @@ export default function HomePage() {
   const glazeRateDisplay = minerState
     ? formatTokenAmount(minerState.dps, DONUT_DECIMALS, 4)
     : "—";
-  const nextRateDisplay = minerState
-    ? formatTokenAmount(minerState.nextDps, DONUT_DECIMALS, 4)
-    : "—";
   const glazePriceDisplay = minerState
     ? `Ξ${formatEth(minerState.price, minerState.price === 0n ? 0 : 5)}`
     : "Ξ—";
@@ -394,6 +392,7 @@ export default function HomePage() {
     : context?.user?.fid
       ? `fid ${context.user.fid}`
       : "";
+  const userAvatarUrl = context?.user?.pfpUrl ?? null;
 
   return (
     <main className="flex h-screen w-screen justify-center overflow-hidden bg-black font-mono text-white">
@@ -406,9 +405,16 @@ export default function HomePage() {
       >
         <div className="flex flex-1 flex-col">
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold tracking-wide">DONUT MINER</h1>
+            <h1 className="text-2xl font-bold tracking-wide">GLAZE CORP</h1>
             <div className="flex items-center gap-2 rounded-full bg-black px-3 py-1">
               <Avatar className="h-8 w-8 border border-zinc-800">
+                {userAvatarUrl ? (
+                  <AvatarImage
+                    src={userAvatarUrl}
+                    alt={userDisplayName}
+                    className="object-cover"
+                  />
+                ) : null}
                 <AvatarFallback className="bg-zinc-800 text-white">
                   {initialsFrom(userDisplayName)}
                 </AvatarFallback>
@@ -506,9 +512,6 @@ export default function HomePage() {
                   🍩{glazeRateDisplay}
                   <span className="text-xs text-gray-400"> /s</span>
                 </div>
-                <div className="text-[11px] text-gray-500">
-                  Next: 🍩{nextRateDisplay}/s
-                </div>
               </CardContent>
             </Card>
 
@@ -520,11 +523,6 @@ export default function HomePage() {
                 <div className="text-2xl font-semibold text-pink-400">
                   {glazePriceDisplay}
                 </div>
-                {minerState?.price === 0n ? (
-                  <div className="text-[11px] text-gray-500">
-                    Free to claim this epoch
-                  </div>
-                ) : null}
               </CardContent>
             </Card>
           </div>

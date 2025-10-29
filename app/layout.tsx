@@ -3,8 +3,8 @@ import type { Metadata } from "next";
 import { Providers } from "@/components/providers";
 
 export const metadata: Metadata = {
-  title: "Donut Miner",
-  description: "Glaze the donut, claim the throne.",
+  title: "Glaze Corp",
+  description: "Claim the glaze factory and earn donuts on Base.",
 };
 
 export default function RootLayout({
