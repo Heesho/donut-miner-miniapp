@@ -5,7 +5,7 @@ const apiKey = process.env.NEYNAR_API_KEY;
 
 const client =
   apiKey != null
-    ? new NeynarAPIClient({ apiKey })
+    ? new NeynarAPIClient(apiKey)
     : null;
 
 export async function GET(request: NextRequest) {
