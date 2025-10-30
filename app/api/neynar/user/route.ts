@@ -16,7 +16,55 @@ type NeynarUser = {
   } | null;
 };
 
-const resolvePfp = (user: NeynarUser | null | undefined) => {
+type NeynarUserEnvelope = {
+  user?: NeynarUser | null;
+  address?: string | null;
+  custody_address?: string | null;
+  fid?: number | null;
+  username?: string | null;
+  display_name?: string | null;
+  displayName?: string | null;
+  pfp?: { url?: string | null } | null;
+  pfp_url?: string | null;
+  profile?: NeynarUser["profile"];
+};
+
+const normalizeUser = (
+  value: NeynarUser | NeynarUserEnvelope | null | undefined,
+): NeynarUser | null => {
+  if (!value) return null;
+  const envelope = value as NeynarUserEnvelope;
+  const base =
+    (envelope.user as NeynarUser | null | undefined) ??
+    (value as NeynarUser | null | undefined);
+
+  if (!base) {
+    return {
+      fid: envelope.fid ?? null,
+      username: envelope.username ?? null,
+      display_name: envelope.display_name ?? null,
+      displayName: envelope.displayName ?? null,
+      pfp: envelope.pfp ?? null,
+      pfp_url: envelope.pfp_url ?? null,
+      profile: envelope.profile ?? null,
+    };
+  }
+
+  return {
+    fid: base.fid ?? envelope.fid ?? null,
+    username: base.username ?? envelope.username ?? null,
+    display_name: base.display_name ?? envelope.display_name ?? null,
+    displayName: base.displayName ?? envelope.displayName ?? null,
+    pfp: base.pfp ?? envelope.pfp ?? null,
+    pfp_url: base.pfp_url ?? envelope.pfp_url ?? null,
+    profile: base.profile ?? envelope.profile ?? null,
+  };
+};
+
+const resolvePfp = (
+  value: NeynarUser | NeynarUserEnvelope | null | undefined,
+) => {
+  const user = normalizeUser(value);
   if (!user) return null;
   const profile = user.profile ?? null;
   return (
@@ -29,11 +77,16 @@ const resolvePfp = (user: NeynarUser | null | undefined) => {
   );
 };
 
-const buildHeaders = () => ({
-  accept: "application/json",
-  "x-api-key": apiKey ?? "",
-  api_key: apiKey ?? "",
-});
+const buildHeaders = () => {
+  if (!apiKey) {
+    throw new Error("Neynar API key not configured.");
+  }
+  return {
+    accept: "application/json",
+    "x-api-key": apiKey,
+    api_key: apiKey,
+  };
+};
 
 const fetchHandleUser = async (handle: string) => {
   if (!handle) return null;
@@ -75,15 +128,15 @@ const fetchAddressUser = async (address: string) => {
 
   const data = (await res.json()) as {
     result?: {
-      user?: NeynarUser | null;
+      user?: NeynarUserEnvelope | NeynarUser | null;
       users?:
-        | NeynarUser[]
-        | Record<string, NeynarUser | null | undefined>
+        | (NeynarUserEnvelope | NeynarUser | null | undefined)[]
+        | Record<string, NeynarUserEnvelope | NeynarUser | null | undefined>
         | null;
     };
   };
 
-  const candidates: (NeynarUser | null | undefined)[] = [];
+  const candidates: (NeynarUserEnvelope | NeynarUser | null | undefined)[] = [];
   if (data.result?.user) {
     candidates.push(data.result.user);
   }
@@ -94,11 +147,10 @@ const fetchAddressUser = async (address: string) => {
     candidates.push(...Object.values(usersField));
   }
 
-  return (
-    candidates.find((candidate) => !!candidate && resolvePfp(candidate)) ??
-    candidates.find((candidate) => !!candidate) ??
-    null
-  );
+  const preferred =
+    candidates.find((candidate) => !!resolvePfp(candidate)) ?? candidates[0];
+
+  return normalizeUser(preferred);
 };
 
 export async function GET(request: NextRequest) {
