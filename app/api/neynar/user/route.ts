@@ -1,32 +1,104 @@
-import { Configuration, NeynarAPIClient } from "@neynar/nodejs-sdk";
 import { NextRequest, NextResponse } from "next/server";
+
 const apiKey = process.env.NEYNAR_API_KEY;
 
-type NeynarApiVerifiedAddresses = {
-  eth_addresses?: string[] | null;
-  sol_addresses?: string[] | null;
-};
-
-type NeynarApiProfile = {
-  pfp?: {
-    url?: string | null;
-  } | null;
-  picture_url?: string | null;
-  pictureUrl?: string | null;
-} | null;
-
-type NeynarApiUser = {
+type NeynarUser = {
   fid?: number | null;
   username?: string | null;
   display_name?: string | null;
   displayName?: string | null;
   pfp?: { url?: string | null } | null;
   pfp_url?: string | null;
-  profile?: NeynarApiProfile;
-  verifications?: string[] | null;
-  verified_addresses?: NeynarApiVerifiedAddresses | null;
-  custody_address?: string | null;
-  address?: string | null;
+  profile?: {
+    pfp?: { url?: string | null } | null;
+    picture_url?: string | null;
+    pictureUrl?: string | null;
+  } | null;
+};
+
+const resolvePfp = (user: NeynarUser | null | undefined) => {
+  if (!user) return null;
+  const profile = user.profile ?? null;
+  return (
+    user.pfp?.url ??
+    profile?.pfp?.url ??
+    profile?.picture_url ??
+    profile?.pictureUrl ??
+    user.pfp_url ??
+    null
+  );
+};
+
+const buildHeaders = () => ({
+  accept: "application/json",
+  "x-api-key": apiKey ?? "",
+  api_key: apiKey ?? "",
+});
+
+const fetchHandleUser = async (handle: string) => {
+  if (!handle) return null;
+  const lookupUrl = new URL(
+    "https://api.neynar.com/v2/farcaster/user/by-username",
+  );
+  lookupUrl.searchParams.set("username", handle.toLowerCase());
+  const res = await fetch(lookupUrl, {
+    headers: buildHeaders(),
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    if (res.status === 404) return null;
+    throw new Error(`handle lookup failed with ${res.status}`);
+  }
+  const data = (await res.json()) as {
+    result?: { user?: NeynarUser | null };
+  };
+  return data.result?.user ?? null;
+};
+
+const fetchAddressUser = async (address: string) => {
+  if (!address) return null;
+  const url = new URL(
+    "https://api.neynar.com/v2/farcaster/user/bulk-by-address",
+  );
+  url.searchParams.set("addresses", address);
+  url.searchParams.set("address_types", "custody_address,verified_address");
+
+  const res = await fetch(url, {
+    headers: buildHeaders(),
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    if (res.status === 404) return null;
+    throw new Error(`address lookup failed with ${res.status}`);
+  }
+
+  const data = (await res.json()) as {
+    result?: {
+      user?: NeynarUser | null;
+      users?:
+        | NeynarUser[]
+        | Record<string, NeynarUser | null | undefined>
+        | null;
+    };
+  };
+
+  const candidates: (NeynarUser | null | undefined)[] = [];
+  if (data.result?.user) {
+    candidates.push(data.result.user);
+  }
+  const usersField = data.result?.users;
+  if (Array.isArray(usersField)) {
+    candidates.push(...usersField);
+  } else if (usersField && typeof usersField === "object") {
+    candidates.push(...Object.values(usersField));
+  }
+
+  return (
+    candidates.find((candidate) => !!candidate && resolvePfp(candidate)) ??
+    candidates.find((candidate) => !!candidate) ??
+    null
+  );
 };
 
 export async function GET(request: NextRequest) {
@@ -56,41 +128,15 @@ export async function GET(request: NextRequest) {
         { status: 400 },
       );
     }
+
     const normalizedAddress = cleanedAddress.toLowerCase();
     const cleanedHandle = handleParam?.trim() ?? "";
     const sanitizedHandle = cleanedHandle.replace(/^@+/, "");
 
-    const client = new NeynarAPIClient(
-      new Configuration({
-        apiKey,
-      }),
-    );
-
-    const resolvePfp = (value: NeynarApiUser | null | undefined) => {
-      if (!value) return null;
-      const maybeProfile = value.profile as
-        | (NeynarApiProfile & {
-            picture_url?: string | null;
-            pictureUrl?: string | null;
-          })
-        | null
-        | undefined;
-
-      return (
-        value.pfp?.url ??
-        maybeProfile?.pfp?.url ??
-        maybeProfile?.picture_url ??
-        maybeProfile?.pictureUrl ??
-        value.pfp_url ??
-        null
-      );
-    };
-
-    let handleUser: NeynarApiUser | null = null;
+    let handleUser: NeynarUser | null = null;
     if (sanitizedHandle) {
       try {
-        const { result } = await client.lookupUserByUsername(sanitizedHandle);
-        handleUser = result?.user ?? null;
+        handleUser = await fetchHandleUser(sanitizedHandle);
       } catch (error) {
         console.error("[neynar:user] handle lookup failed", error);
       }
@@ -100,7 +146,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({
         user: {
           fid: handleUser.fid ?? null,
-          username: handleUser.username ?? null,
+          username: handleUser.username ?? sanitizedHandle ?? null,
           displayName:
             handleUser.display_name ?? handleUser.displayName ?? null,
           pfpUrl: resolvePfp(handleUser),
@@ -108,24 +154,9 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    let addressUser: NeynarApiUser | null = null;
+    let addressUser: NeynarUser | null = null;
     try {
-      const { result } = await client.fetchBulkUsersByEthOrSolAddress({
-        addresses: [normalizedAddress],
-      });
-      let candidate: NeynarApiUser | null = null;
-      if (result?.user) {
-        candidate = result.user as NeynarApiUser;
-      } else if (Array.isArray(result?.users)) {
-        candidate = (result?.users?.[0] as NeynarApiUser | undefined) ?? null;
-      } else if (result?.users && typeof result.users === "object") {
-        const first = Object.values(result.users)[0] as
-          | NeynarApiUser
-          | undefined
-          | null;
-        candidate = first ?? null;
-      }
-      addressUser = candidate ?? null;
+      addressUser = await fetchAddressUser(normalizedAddress);
     } catch (error) {
       console.error("[neynar:user] address lookup failed", error);
     }
