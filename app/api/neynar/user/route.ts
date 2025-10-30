@@ -72,12 +72,10 @@ export async function GET(request: NextRequest) {
       address?: string | null;
     };
 
-    type RawUserEnvelope = {
+    type RawUserEnvelope = NeynarUser & {
       user?: NeynarUser | null;
       address?: string | null;
       custody_address?: string | null;
-      verifications?: string[] | null;
-      verified_addresses?: VerifiedAddressList | null;
     };
 
     type NeynarResponse = {
