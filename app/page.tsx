@@ -17,11 +17,7 @@ import { formatEther, formatUnits, zeroAddress, type Address } from "viem";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  CONTRACT_ADDRESSES,
-  MINER_ABI,
-  MULTICALL_ABI,
-} from "@/lib/contracts";
+import { CONTRACT_ADDRESSES, MULTICALL_ABI } from "@/lib/contracts";
 import { cn } from "@/lib/utils";
 
 type MiniAppContext = {
@@ -296,8 +292,8 @@ export default function HomePage() {
       const maxPrice = price === 0n ? 0n : (price * 105n) / 100n;
       await writeContract({
         account: targetAddress as Address,
-        address: CONTRACT_ADDRESSES.miner as Address,
-        abi: MINER_ABI,
+        address: CONTRACT_ADDRESSES.multicall as Address,
+        abi: MULTICALL_ABI,
         functionName: "mine",
         args: [
           CONTRACT_ADDRESSES.provider as Address,

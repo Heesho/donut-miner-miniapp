@@ -1,11 +1,44 @@
 export const CONTRACT_ADDRESSES = {
-  donut: "0xC511594e71809f8c13Bdc5E22d5b8Ca0d130D7d5",
-  miner: "0x9E5eA3b8AdDA08dFb918370811c1496b114DF97e",
-  multicall: "0xDbC6028935b3b5b96451C48bD66Eff0918eA59A9",
+  donut: "0x9E6702D8DEad349062945093f1c8a945CA111E73",
+  miner: "0x9Bea9c75063095ba8C6bF60F6B50858B140bF869",
+  multicall: "0x0c62B9A9763F4BBF42ba736440E7aC9c2B98f851",
   provider: "0x7a8C895E7826F66e1094532cB435Da725dc3868f",
 } as const;
 
 export const MULTICALL_ABI = [
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "provider",
+        type: "address",
+      },
+      {
+        internalType: "uint256",
+        name: "epochId",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "deadline",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "maxPrice",
+        type: "uint256",
+      },
+      {
+        internalType: "string",
+        name: "uri",
+        type: "string",
+      },
+    ],
+    name: "mine",
+    outputs: [],
+    stateMutability: "payable",
+    type: "function",
+  },
   {
     inputs: [
       {
@@ -80,48 +113,6 @@ export const MULTICALL_ABI = [
       },
     ],
     stateMutability: "view",
-    type: "function",
-  },
-] as const;
-
-export const MINER_ABI = [
-  {
-    inputs: [
-      {
-        internalType: "address",
-        name: "provider",
-        type: "address",
-      },
-      {
-        internalType: "uint256",
-        name: "epochId",
-        type: "uint256",
-      },
-      {
-        internalType: "uint256",
-        name: "deadline",
-        type: "uint256",
-      },
-      {
-        internalType: "uint256",
-        name: "maxPrice",
-        type: "uint256",
-      },
-      {
-        internalType: "string",
-        name: "uri",
-        type: "string",
-      },
-    ],
-    name: "mine",
-    outputs: [
-      {
-        internalType: "uint256",
-        name: "price",
-        type: "uint256",
-      },
-    ],
-    stateMutability: "payable",
     type: "function",
   },
 ] as const;
