@@ -379,17 +379,10 @@ export default function HomePage() {
 
     const primary = uniqueLabels[0] ?? addressLabel;
 
-    const secondaryCandidate =
-      uniqueLabels.find(
-        (label) =>
-          label !== primary &&
-          (label.startsWith("@") || label === addressLabel),
-      ) ?? (primary === addressLabel ? "" : addressLabel);
-
     const secondary =
-      secondaryCandidate && secondaryCandidate !== primary
-        ? secondaryCandidate
-        : "";
+      uniqueLabels.find(
+        (label) => label !== primary && label.startsWith("@"),
+      ) ?? "";
 
     const avatarUrl =
       profile?.pfpUrl ?? (isYou ? contextProfile?.pfpUrl ?? null : null);

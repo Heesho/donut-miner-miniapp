@@ -59,6 +59,12 @@ export async function GET(request: NextRequest) {
       sol_addresses?: string[] | null;
     };
 
+    type NeynarProfile = {
+      pfp?: {
+        url?: string | null;
+      } | null;
+    } | null;
+
     type NeynarUser = {
       fid?: number;
       username?: string;
@@ -66,6 +72,7 @@ export async function GET(request: NextRequest) {
       displayName?: string;
       pfp?: { url?: string | null } | null;
       pfp_url?: string | null;
+      profile?: NeynarProfile;
       verifications?: string[] | null;
       verified_addresses?: VerifiedAddressList | null;
       custody_address?: string | null;
@@ -146,12 +153,22 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ user: null });
     }
 
+    const resolvePfp = (value: NeynarUser | null | undefined) => {
+      if (!value) return null;
+      return (
+        value.pfp?.url ??
+        value.profile?.pfp?.url ??
+        value.pfp_url ??
+        null
+      );
+    };
+
     return NextResponse.json({
       user: {
         fid: user.fid ?? null,
         username: user.username ?? null,
         displayName: user.display_name ?? user.displayName ?? null,
-        pfpUrl: user.pfp?.url ?? user.pfp_url ?? null,
+        pfpUrl: resolvePfp(user) ?? resolvePfp(envelope ?? null),
       },
     });
   } catch (error) {
