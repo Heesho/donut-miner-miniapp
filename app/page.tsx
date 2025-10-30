@@ -236,6 +236,8 @@ export default function HomePage() {
   const minerAddress = minerState?.miner ?? zeroAddress;
   const hasMiner = minerAddress !== zeroAddress;
 
+  const claimedHandleParam = (minerState?.uri ?? "").trim();
+
   const { data: neynarUser } = useQuery<{
     user: {
       fid: number | null;
@@ -244,10 +246,16 @@ export default function HomePage() {
       pfpUrl: string | null;
     } | null;
   }>({
-    queryKey: ["neynar-user", minerAddress],
+    queryKey: ["neynar-user", minerAddress, claimedHandleParam],
     queryFn: async () => {
+      const params = new URLSearchParams({
+        address: minerAddress,
+      });
+      if (claimedHandleParam) {
+        params.set("handle", claimedHandleParam);
+      }
       const res = await fetch(
-        `/api/neynar/user?address=${encodeURIComponent(minerAddress)}`,
+        `/api/neynar/user?${params.toString()}`,
       );
       if (!res.ok) {
         throw new Error("Failed to load Farcaster profile.");
@@ -351,11 +359,10 @@ export default function HomePage() {
       : null;
     const contextDisplayName = contextProfile?.displayName ?? null;
 
-    const claimedUri = (minerState.uri ?? "").trim();
-    const claimedHandle = claimedUri
-      ? claimedUri.startsWith("@")
-        ? claimedUri
-        : `@${claimedUri}`
+    const claimedHandle = claimedHandleParam
+      ? claimedHandleParam.startsWith("@")
+        ? claimedHandleParam
+        : `@${claimedHandleParam}`
       : null;
 
     const addressLabel = fallback;
@@ -400,10 +407,10 @@ export default function HomePage() {
     };
   }, [
     address,
+    claimedHandleParam,
     context?.user?.displayName,
     context?.user?.pfpUrl,
     context?.user?.username,
-    minerState?.uri,
     minerState,
     neynarUser?.user,
   ]);

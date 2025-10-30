@@ -4,6 +4,7 @@ const apiKey = process.env.NEYNAR_API_KEY;
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const address = searchParams.get("address");
+  const handleParam = searchParams.get("handle");
 
   if (!address) {
     return NextResponse.json(
@@ -28,6 +29,8 @@ export async function GET(request: NextRequest) {
       );
     }
     const normalizedAddress = cleanedAddress.toLowerCase();
+    const cleanedHandle = handleParam?.trim() ?? "";
+    const sanitizedHandle = cleanedHandle.replace(/^@+/, "");
 
     const neynarUrl = new URL(
       "https://api.neynar.com/v2/farcaster/user/bulk-by-address",
@@ -38,12 +41,14 @@ export async function GET(request: NextRequest) {
       "custody_address,verified_address",
     );
 
+    const headers = {
+      accept: "application/json",
+      "x-api-key": apiKey,
+      api_key: apiKey,
+    };
+
     const res = await fetch(neynarUrl, {
-      headers: {
-        accept: "application/json",
-        "x-api-key": apiKey,
-        "api_key": apiKey,
-      },
+      headers,
       cache: "no-store",
     });
 
@@ -97,6 +102,42 @@ export async function GET(request: NextRequest) {
 
     const data = (await res.json()) as NeynarResponse;
 
+    const resolvePfp = (value: NeynarUser | null | undefined) => {
+      if (!value) return null;
+      return (
+        value.pfp?.url ??
+        value.profile?.pfp?.url ??
+        value.pfp_url ??
+        null
+      );
+    };
+
+    const fetchByHandle = async (
+      handle: string,
+    ): Promise<RawUserEnvelope | null> => {
+      if (!handle) return null;
+      const normalized = handle.toLowerCase();
+      const handleUrl = new URL(
+        "https://api.neynar.com/v2/farcaster/user/by-username",
+      );
+      handleUrl.searchParams.set("username", normalized);
+      const handleRes = await fetch(handleUrl, {
+        headers,
+        cache: "no-store",
+      });
+      if (!handleRes.ok) {
+        if (handleRes.status === 404) {
+          return null;
+        }
+        throw new Error(`Neynar username lookup failed with ${handleRes.status}`);
+      }
+      const handleData = (await handleRes.json()) as {
+        result?: { user?: NeynarUser | null };
+      };
+      const handleUser = handleData.result?.user ?? null;
+      return handleUser ? ({ user: handleUser } as RawUserEnvelope) : null;
+    };
+
     const normaliseList = (
       input:
         | RawUserEnvelope[]
@@ -142,33 +183,47 @@ export async function GET(request: NextRequest) {
       return collected;
     };
 
-    const envelope =
+    let envelope =
       candidates.find((candidate) =>
         collectAddresses(candidate).has(normalizedAddress),
       ) ?? candidates[0];
 
-    const user = envelope?.user ?? envelope ?? null;
+    let user = envelope?.user ?? envelope ?? null;
 
-    if (!user) {
+    let handleEnvelope: RawUserEnvelope | null = null;
+    if ((!user || !resolvePfp(user)) && sanitizedHandle) {
+      handleEnvelope = await fetchByHandle(sanitizedHandle);
+      if (!envelope && handleEnvelope) {
+        envelope = handleEnvelope;
+      }
+      if (!user && handleEnvelope) {
+        user = handleEnvelope.user ?? handleEnvelope ?? null;
+      }
+    }
+
+    const handleUser = handleEnvelope?.user ?? handleEnvelope ?? null;
+
+    if (!user && !handleUser) {
       return NextResponse.json({ user: null });
     }
 
-    const resolvePfp = (value: NeynarUser | null | undefined) => {
-      if (!value) return null;
-      return (
-        value.pfp?.url ??
-        value.profile?.pfp?.url ??
-        value.pfp_url ??
-        null
-      );
-    };
+    const primary = user ?? handleUser ?? null;
+    const secondary = user ? handleUser : null;
 
     return NextResponse.json({
       user: {
-        fid: user.fid ?? null,
-        username: user.username ?? null,
-        displayName: user.display_name ?? user.displayName ?? null,
-        pfpUrl: resolvePfp(user) ?? resolvePfp(envelope ?? null),
+        fid: primary?.fid ?? secondary?.fid ?? null,
+        username: primary?.username ?? secondary?.username ?? null,
+        displayName:
+          primary?.display_name ??
+          primary?.displayName ??
+          secondary?.display_name ??
+          secondary?.displayName ??
+          null,
+        pfpUrl:
+          resolvePfp(primary) ??
+          resolvePfp(secondary) ??
+          resolvePfp(envelope ?? null),
       },
     });
   } catch (error) {
