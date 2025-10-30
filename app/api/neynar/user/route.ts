@@ -20,10 +20,19 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    const cleanedAddress = address.trim();
+    if (!cleanedAddress) {
+      return NextResponse.json(
+        { error: "Address parameter is empty." },
+        { status: 400 },
+      );
+    }
+    const normalizedAddress = cleanedAddress.toLowerCase();
+
     const neynarUrl = new URL(
       "https://api.neynar.com/v2/farcaster/user/bulk-by-address",
     );
-    neynarUrl.searchParams.set("addresses", address.toLowerCase());
+    neynarUrl.searchParams.set("addresses", normalizedAddress);
     neynarUrl.searchParams.set(
       "address_types",
       "custody_address,verified_address",
@@ -45,6 +54,11 @@ export async function GET(request: NextRequest) {
       throw new Error(`Neynar request failed with ${res.status}`);
     }
 
+    type VerifiedAddressList = {
+      eth_addresses?: string[] | null;
+      sol_addresses?: string[] | null;
+    };
+
     type NeynarUser = {
       fid?: number;
       username?: string;
@@ -52,32 +66,81 @@ export async function GET(request: NextRequest) {
       displayName?: string;
       pfp?: { url?: string | null } | null;
       pfp_url?: string | null;
+      verifications?: string[] | null;
+      verified_addresses?: VerifiedAddressList | null;
+      custody_address?: string | null;
+      address?: string | null;
     };
 
     type RawUserEnvelope = {
       user?: NeynarUser | null;
       address?: string | null;
       custody_address?: string | null;
-    } & Partial<NeynarUser>;
+      verifications?: string[] | null;
+      verified_addresses?: VerifiedAddressList | null;
+    };
 
-    const data = (await res.json()) as {
+    type NeynarResponse = {
       result?: {
-        users?: RawUserEnvelope[];
+        user?: RawUserEnvelope | null;
+        users?:
+          | RawUserEnvelope[]
+          | Record<string, RawUserEnvelope | null>
+          | null;
       };
     };
 
-    const lowerAddress = address.toLowerCase();
+    const data = (await res.json()) as NeynarResponse;
+
+    const normaliseList = (
+      input:
+        | RawUserEnvelope[]
+        | Record<string, RawUserEnvelope | null>
+        | null
+        | undefined,
+    ): RawUserEnvelope[] => {
+      if (!input) return [];
+      if (Array.isArray(input)) return input;
+      return Object.values(input).filter(
+        (candidate): candidate is RawUserEnvelope => !!candidate,
+      );
+    };
+
+    const candidates = [
+      ...(data.result?.user ? [data.result.user] : []),
+      ...normaliseList(data.result?.users),
+    ];
+
+    const collectAddresses = (candidate: RawUserEnvelope) => {
+      const collected = new Set<string>();
+      const push = (value?: string | null) => {
+        if (value) {
+          collected.add(value.toLowerCase());
+        }
+      };
+
+      push(candidate.address);
+      push(candidate.custody_address);
+      candidate.verifications?.forEach(push);
+      candidate.verified_addresses?.eth_addresses?.forEach(push);
+      candidate.verified_addresses?.sol_addresses?.forEach(push);
+
+      const user = candidate.user;
+      if (user) {
+        push(user.address);
+        push(user.custody_address);
+        user.verifications?.forEach(push);
+        user.verified_addresses?.eth_addresses?.forEach(push);
+        user.verified_addresses?.sol_addresses?.forEach(push);
+      }
+
+      return collected;
+    };
 
     const envelope =
-      data.result?.users?.find((candidate) => {
-        const candidateAddresses = [
-          candidate.address,
-          candidate.custody_address,
-        ]
-          .filter((entry): entry is string => !!entry)
-          .map((entry) => entry.toLowerCase());
-        return candidateAddresses.includes(lowerAddress);
-      }) ?? data.result?.users?.[0];
+      candidates.find((candidate) =>
+        collectAddresses(candidate).has(normalizedAddress),
+      ) ?? candidates[0];
 
     const user = envelope?.user ?? envelope ?? null;
 

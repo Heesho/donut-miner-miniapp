@@ -342,37 +342,67 @@ export default function HomePage() {
     const profile = neynarUser?.user ?? null;
     const profileUsername = profile?.username
       ? `@${profile.username}`
-      : undefined;
-
-    const hasProfile = !!profile;
+      : null;
+    const profileDisplayName = profile?.displayName ?? null;
 
     const contextProfile = context?.user ?? null;
-    const contextPrimaryLabel = contextProfile?.username
+    const contextHandle = contextProfile?.username
       ? `@${contextProfile.username}`
-      : contextProfile?.displayName ?? null;
+      : null;
+    const contextDisplayName = contextProfile?.displayName ?? null;
+
+    const claimedUri = (minerState.uri ?? "").trim();
+    const claimedHandle = claimedUri
+      ? claimedUri.startsWith("@")
+        ? claimedUri
+        : `@${claimedUri}`
+      : null;
 
     const addressLabel = fallback;
 
-    const primary = hasProfile
-      ? profileUsername ?? profile?.displayName ?? addressLabel
-      : isYou && contextPrimaryLabel
-        ? contextPrimaryLabel
-        : addressLabel;
+    const labelCandidates = [
+      profileDisplayName,
+      profileUsername,
+      claimedHandle,
+      isYou ? contextDisplayName : null,
+      isYou ? contextHandle : null,
+      addressLabel,
+    ].filter((label): label is string => !!label);
 
-    const secondary = "";
+    const seenLabels = new Set<string>();
+    const uniqueLabels = labelCandidates.filter((label) => {
+      const key = label.toLowerCase();
+      if (seenLabels.has(key)) return false;
+      seenLabels.add(key);
+      return true;
+    });
 
-    const avatarUrl = hasProfile
-      ? profile?.pfpUrl ?? (isYou ? contextProfile?.pfpUrl ?? null : null)
-      : isYou
-        ? contextProfile?.pfpUrl ?? null
-        : null;
+    const primary = uniqueLabels[0] ?? addressLabel;
+
+    const secondaryCandidate =
+      uniqueLabels.find(
+        (label) =>
+          label !== primary &&
+          (label.startsWith("@") || label === addressLabel),
+      ) ?? (primary === addressLabel ? "" : addressLabel);
+
+    const secondary =
+      secondaryCandidate && secondaryCandidate !== primary
+        ? secondaryCandidate
+        : "";
+
+    const avatarUrl =
+      profile?.pfpUrl ?? (isYou ? contextProfile?.pfpUrl ?? null : null);
+
+    const isUnknown =
+      !profile && !claimedHandle && !(isYou && (contextHandle || contextDisplayName));
 
     return {
       primary,
       secondary,
       isYou,
       avatarUrl,
-      isUnknown: !hasProfile && !isYou,
+      isUnknown,
       addressLabel,
     };
   }, [
@@ -380,6 +410,7 @@ export default function HomePage() {
     context?.user?.displayName,
     context?.user?.pfpUrl,
     context?.user?.username,
+    minerState?.uri,
     minerState,
     neynarUser?.user,
   ]);
