@@ -32,33 +32,6 @@ export async function GET(request: NextRequest) {
     const cleanedHandle = handleParam?.trim() ?? "";
     const sanitizedHandle = cleanedHandle.replace(/^@+/, "");
 
-    const neynarUrl = new URL(
-      "https://api.neynar.com/v2/farcaster/user/bulk-by-address",
-    );
-    neynarUrl.searchParams.set("addresses", normalizedAddress);
-    neynarUrl.searchParams.set(
-      "address_types",
-      "custody_address,verified_address",
-    );
-
-    const headers = {
-      accept: "application/json",
-      "x-api-key": apiKey,
-      api_key: apiKey,
-    };
-
-    const res = await fetch(neynarUrl, {
-      headers,
-      cache: "no-store",
-    });
-
-    if (!res.ok) {
-      if (res.status === 404) {
-        return NextResponse.json({ user: null });
-      }
-      throw new Error(`Neynar request failed with ${res.status}`);
-    }
-
     type VerifiedAddressList = {
       eth_addresses?: string[] | null;
       sol_addresses?: string[] | null;
@@ -90,17 +63,11 @@ export async function GET(request: NextRequest) {
       custody_address?: string | null;
     };
 
-    type NeynarResponse = {
-      result?: {
-        user?: RawUserEnvelope | null;
-        users?:
-          | RawUserEnvelope[]
-          | Record<string, RawUserEnvelope | null>
-          | null;
-      };
+    const headers = {
+      accept: "application/json",
+      "x-api-key": apiKey,
+      api_key: apiKey,
     };
-
-    const data = (await res.json()) as NeynarResponse;
 
     const resolvePfp = (value: NeynarUser | null | undefined) => {
       if (!value) return null;
@@ -114,7 +81,7 @@ export async function GET(request: NextRequest) {
 
     const fetchByHandle = async (
       handle: string,
-    ): Promise<RawUserEnvelope | null> => {
+    ): Promise<NeynarUser | null> => {
       if (!handle) return null;
       const normalized = handle.toLowerCase();
       const handleUrl = new URL(
@@ -134,9 +101,62 @@ export async function GET(request: NextRequest) {
       const handleData = (await handleRes.json()) as {
         result?: { user?: NeynarUser | null };
       };
-      const handleUser = handleData.result?.user ?? null;
-      return handleUser ? ({ user: handleUser } as RawUserEnvelope) : null;
+      return handleData.result?.user ?? null;
     };
+
+    let handleUser: NeynarUser | null = null;
+    if (sanitizedHandle) {
+      try {
+        handleUser = await fetchByHandle(sanitizedHandle);
+      } catch (error) {
+        console.error("[neynar:user] handle lookup failed", error);
+      }
+    }
+
+    if (handleUser && resolvePfp(handleUser)) {
+      return NextResponse.json({
+        user: {
+          fid: handleUser.fid ?? null,
+          username: handleUser.username ?? null,
+          displayName:
+            handleUser.display_name ?? handleUser.displayName ?? null,
+          pfpUrl: resolvePfp(handleUser),
+        },
+      });
+    }
+
+    const neynarUrl = new URL(
+      "https://api.neynar.com/v2/farcaster/user/bulk-by-address",
+    );
+    neynarUrl.searchParams.set("addresses", normalizedAddress);
+    neynarUrl.searchParams.set(
+      "address_types",
+      "custody_address,verified_address",
+    );
+
+    const res = await fetch(neynarUrl, {
+      headers,
+      cache: "no-store",
+    });
+
+    if (!res.ok) {
+      if (res.status === 404) {
+        return NextResponse.json({ user: null });
+      }
+      throw new Error(`Neynar request failed with ${res.status}`);
+    }
+
+    type NeynarResponse = {
+      result?: {
+        user?: RawUserEnvelope | null;
+        users?:
+          | RawUserEnvelope[]
+          | Record<string, RawUserEnvelope | null>
+          | null;
+      };
+    };
+
+    const data = (await res.json()) as NeynarResponse;
 
     const normaliseList = (
       input:
@@ -188,20 +208,7 @@ export async function GET(request: NextRequest) {
         collectAddresses(candidate).has(normalizedAddress),
       ) ?? candidates[0];
 
-    let user = envelope?.user ?? envelope ?? null;
-
-    let handleEnvelope: RawUserEnvelope | null = null;
-    if ((!user || !resolvePfp(user)) && sanitizedHandle) {
-      handleEnvelope = await fetchByHandle(sanitizedHandle);
-      if (!envelope && handleEnvelope) {
-        envelope = handleEnvelope;
-      }
-      if (!user && handleEnvelope) {
-        user = handleEnvelope.user ?? handleEnvelope ?? null;
-      }
-    }
-
-    const handleUser = handleEnvelope?.user ?? handleEnvelope ?? null;
+    const user = envelope?.user ?? envelope ?? null;
 
     if (!user && !handleUser) {
       return NextResponse.json({ user: null });
@@ -213,7 +220,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       user: {
         fid: primary?.fid ?? secondary?.fid ?? null,
-        username: primary?.username ?? secondary?.username ?? null,
+        username:
+          primary?.username ??
+          secondary?.username ??
+          (sanitizedHandle || null),
         displayName:
           primary?.display_name ??
           primary?.displayName ??
