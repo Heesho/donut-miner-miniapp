@@ -1,5 +1,33 @@
+import { Configuration, NeynarAPIClient } from "@neynar/nodejs-sdk";
 import { NextRequest, NextResponse } from "next/server";
 const apiKey = process.env.NEYNAR_API_KEY;
+
+type NeynarApiVerifiedAddresses = {
+  eth_addresses?: string[] | null;
+  sol_addresses?: string[] | null;
+};
+
+type NeynarApiProfile = {
+  pfp?: {
+    url?: string | null;
+  } | null;
+  picture_url?: string | null;
+  pictureUrl?: string | null;
+} | null;
+
+type NeynarApiUser = {
+  fid?: number | null;
+  username?: string | null;
+  display_name?: string | null;
+  displayName?: string | null;
+  pfp?: { url?: string | null } | null;
+  pfp_url?: string | null;
+  profile?: NeynarApiProfile;
+  verifications?: string[] | null;
+  verified_addresses?: NeynarApiVerifiedAddresses | null;
+  custody_address?: string | null;
+  address?: string | null;
+};
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -32,82 +60,37 @@ export async function GET(request: NextRequest) {
     const cleanedHandle = handleParam?.trim() ?? "";
     const sanitizedHandle = cleanedHandle.replace(/^@+/, "");
 
-    type VerifiedAddressList = {
-      eth_addresses?: string[] | null;
-      sol_addresses?: string[] | null;
-    };
+    const client = new NeynarAPIClient(
+      new Configuration({
+        apiKey,
+      }),
+    );
 
-    type NeynarProfile = {
-      pfp?: {
-        url?: string | null;
-      } | null;
-    } | null;
-
-    type NeynarUser = {
-      fid?: number;
-      username?: string;
-      display_name?: string;
-      displayName?: string;
-      pfp?: { url?: string | null } | null;
-      pfp_url?: string | null;
-      profile?: NeynarProfile;
-      verifications?: string[] | null;
-      verified_addresses?: VerifiedAddressList | null;
-      custody_address?: string | null;
-      address?: string | null;
-    };
-
-    type RawUserEnvelope = NeynarUser & {
-      user?: NeynarUser | null;
-      address?: string | null;
-      custody_address?: string | null;
-    };
-
-    const headers = {
-      accept: "application/json",
-      "x-api-key": apiKey,
-      api_key: apiKey,
-    };
-
-    const resolvePfp = (value: NeynarUser | null | undefined) => {
+    const resolvePfp = (value: NeynarApiUser | null | undefined) => {
       if (!value) return null;
+      const maybeProfile = value.profile as
+        | (NeynarApiProfile & {
+            picture_url?: string | null;
+            pictureUrl?: string | null;
+          })
+        | null
+        | undefined;
+
       return (
         value.pfp?.url ??
-        value.profile?.pfp?.url ??
+        maybeProfile?.pfp?.url ??
+        maybeProfile?.picture_url ??
+        maybeProfile?.pictureUrl ??
         value.pfp_url ??
         null
       );
     };
 
-    const fetchByHandle = async (
-      handle: string,
-    ): Promise<NeynarUser | null> => {
-      if (!handle) return null;
-      const normalized = handle.toLowerCase();
-      const handleUrl = new URL(
-        "https://api.neynar.com/v2/farcaster/user/by-username",
-      );
-      handleUrl.searchParams.set("username", normalized);
-      const handleRes = await fetch(handleUrl, {
-        headers,
-        cache: "no-store",
-      });
-      if (!handleRes.ok) {
-        if (handleRes.status === 404) {
-          return null;
-        }
-        throw new Error(`Neynar username lookup failed with ${handleRes.status}`);
-      }
-      const handleData = (await handleRes.json()) as {
-        result?: { user?: NeynarUser | null };
-      };
-      return handleData.result?.user ?? null;
-    };
-
-    let handleUser: NeynarUser | null = null;
+    let handleUser: NeynarApiUser | null = null;
     if (sanitizedHandle) {
       try {
-        handleUser = await fetchByHandle(sanitizedHandle);
+        const { result } = await client.lookupUserByUsername(sanitizedHandle);
+        handleUser = result?.user ?? null;
       } catch (error) {
         console.error("[neynar:user] handle lookup failed", error);
       }
@@ -125,97 +108,34 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const neynarUrl = new URL(
-      "https://api.neynar.com/v2/farcaster/user/bulk-by-address",
-    );
-    neynarUrl.searchParams.set("addresses", normalizedAddress);
-    neynarUrl.searchParams.set(
-      "address_types",
-      "custody_address,verified_address",
-    );
-
-    const res = await fetch(neynarUrl, {
-      headers,
-      cache: "no-store",
-    });
-
-    if (!res.ok) {
-      if (res.status === 404) {
-        return NextResponse.json({ user: null });
+    let addressUser: NeynarApiUser | null = null;
+    try {
+      const { result } = await client.fetchBulkUsersByEthOrSolAddress({
+        addresses: [normalizedAddress],
+      });
+      let candidate: NeynarApiUser | null = null;
+      if (result?.user) {
+        candidate = result.user as NeynarApiUser;
+      } else if (Array.isArray(result?.users)) {
+        candidate = (result?.users?.[0] as NeynarApiUser | undefined) ?? null;
+      } else if (result?.users && typeof result.users === "object") {
+        const first = Object.values(result.users)[0] as
+          | NeynarApiUser
+          | undefined
+          | null;
+        candidate = first ?? null;
       }
-      throw new Error(`Neynar request failed with ${res.status}`);
+      addressUser = candidate ?? null;
+    } catch (error) {
+      console.error("[neynar:user] address lookup failed", error);
     }
 
-    type NeynarResponse = {
-      result?: {
-        user?: RawUserEnvelope | null;
-        users?:
-          | RawUserEnvelope[]
-          | Record<string, RawUserEnvelope | null>
-          | null;
-      };
-    };
-
-    const data = (await res.json()) as NeynarResponse;
-
-    const normaliseList = (
-      input:
-        | RawUserEnvelope[]
-        | Record<string, RawUserEnvelope | null>
-        | null
-        | undefined,
-    ): RawUserEnvelope[] => {
-      if (!input) return [];
-      if (Array.isArray(input)) return input;
-      return Object.values(input).filter(
-        (candidate): candidate is RawUserEnvelope => !!candidate,
-      );
-    };
-
-    const candidates = [
-      ...(data.result?.user ? [data.result.user] : []),
-      ...normaliseList(data.result?.users),
-    ];
-
-    const collectAddresses = (candidate: RawUserEnvelope) => {
-      const collected = new Set<string>();
-      const push = (value?: string | null) => {
-        if (value) {
-          collected.add(value.toLowerCase());
-        }
-      };
-
-      push(candidate.address);
-      push(candidate.custody_address);
-      candidate.verifications?.forEach(push);
-      candidate.verified_addresses?.eth_addresses?.forEach(push);
-      candidate.verified_addresses?.sol_addresses?.forEach(push);
-
-      const user = candidate.user;
-      if (user) {
-        push(user.address);
-        push(user.custody_address);
-        user.verifications?.forEach(push);
-        user.verified_addresses?.eth_addresses?.forEach(push);
-        user.verified_addresses?.sol_addresses?.forEach(push);
-      }
-
-      return collected;
-    };
-
-    let envelope =
-      candidates.find((candidate) =>
-        collectAddresses(candidate).has(normalizedAddress),
-      ) ?? candidates[0];
-
-    const user = envelope?.user ?? envelope ?? null;
-
-    if (!user && !handleUser) {
+    if (!addressUser && !handleUser) {
       return NextResponse.json({ user: null });
     }
 
-    const primary = user ?? handleUser ?? null;
-    const secondary = user ? handleUser : null;
+    const primary = addressUser ?? handleUser ?? null;
+    const secondary = addressUser ? handleUser : null;
 
     return NextResponse.json({
       user: {
@@ -230,10 +150,7 @@ export async function GET(request: NextRequest) {
           secondary?.display_name ??
           secondary?.displayName ??
           null,
-        pfpUrl:
-          resolvePfp(primary) ??
-          resolvePfp(secondary) ??
-          resolvePfp(envelope ?? null),
+        pfpUrl: resolvePfp(primary) ?? resolvePfp(secondary),
       },
     });
   } catch (error) {
