@@ -246,16 +246,10 @@ export default function HomePage() {
       pfpUrl: string | null;
     } | null;
   }>({
-    queryKey: ["neynar-user", minerAddress, claimedHandleParam],
+    queryKey: ["neynar-user", minerAddress],
     queryFn: async () => {
-      const params = new URLSearchParams({
-        address: minerAddress,
-      });
-      if (claimedHandleParam) {
-        params.set("handle", claimedHandleParam);
-      }
       const res = await fetch(
-        `/api/neynar/user?${params.toString()}`,
+        `/api/neynar/user?address=${encodeURIComponent(minerAddress)}`,
       );
       if (!res.ok) {
         throw new Error("Failed to load Farcaster profile.");
