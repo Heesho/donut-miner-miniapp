@@ -42,9 +42,9 @@ export async function GET(request: NextRequest) {
     // Try fetching by username first if provided
     if (sanitizedHandle) {
       try {
-        const response = await neynarClient.fetchBulkUsers([sanitizedHandle], { viewerFid: undefined });
-        if (response?.users?.[0]) {
-          user = response.users[0];
+        const response = await neynarClient.lookupUserByUsername(sanitizedHandle);
+        if (response?.user) {
+          user = response.user;
           pfpUrl = user.pfp_url || user.pfp?.url || null;
         }
       } catch (error) {
