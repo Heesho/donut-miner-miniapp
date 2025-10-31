@@ -302,7 +302,7 @@ export default function HomePage() {
           epochId,
           deadline,
           maxPrice,
-          context?.user?.username ? `@${context.user.username}` : "",
+          "",
         ],
         value: price,
         chainId: base.id,
