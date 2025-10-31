@@ -1,7 +1,7 @@
 export const CONTRACT_ADDRESSES = {
   donut: "0x9E6702D8DEad349062945093f1c8a945CA111E73",
   miner: "0x9Bea9c75063095ba8C6bF60F6B50858B140bF869",
-  multicall: "0x0c62B9A9763F4BBF42ba736440E7aC9c2B98f851",
+  multicall: "0x0d6fC0Cf23F0B78B1280c4037cA9B47F13Ca19e4",
   provider: "0x7a8C895E7826F66e1094532cB435Da725dc3868f",
 } as const;
 
@@ -99,6 +99,11 @@ export const MULTICALL_ABI = [
           {
             internalType: "uint256",
             name: "ethBalance",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "wethBalance",
             type: "uint256",
           },
           {

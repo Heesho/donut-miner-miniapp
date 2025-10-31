@@ -41,6 +41,7 @@ type MinerState = {
   miner: Address;
   uri: string;
   ethBalance: bigint;
+  wethBalance: bigint;
   donutBalance: bigint;
 };
 
@@ -688,11 +689,9 @@ export default function HomePage() {
                   <div className="flex items-center gap-1.5 text-[11px] font-semibold">
                     <span>wΞ</span>
                     <span>
-                      {address && accountData?.earned
-                        ? Number(accountData.earned).toLocaleString(undefined, {
-                            maximumFractionDigits: 4,
-                          })
-                        : "0"}
+                      {minerState && minerState.wethBalance !== undefined
+                        ? formatEth(minerState.wethBalance, 4)
+                        : "—"}
                     </span>
                   </div>
                   <div className="flex flex-col items-start text-[11px]">
