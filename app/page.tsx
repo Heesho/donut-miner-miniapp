@@ -474,7 +474,7 @@ export default function HomePage() {
           paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 8px)",
         }}
       >
-        <div className="flex flex-1 flex-col overflow-y-auto">
+        <div className="flex flex-1 flex-col overflow-hidden">
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold tracking-wide">GLAZE CORP</h1>
             {context?.user ? (
@@ -583,7 +583,7 @@ export default function HomePage() {
             />
           </div>
 
-          <div className="mt-2 flex flex-col gap-3 pb-3">
+          <div className="mt-2 flex flex-col gap-2 pb-2">
             <div className="grid grid-cols-2 gap-2">
               <Card className="border-zinc-800 bg-black">
                 <CardContent className="grid gap-1.5 p-2.5">
@@ -620,7 +620,7 @@ export default function HomePage() {
             />
 
             <Button
-              className="w-full rounded-2xl bg-pink-500 py-3.5 text-base font-bold text-black shadow-lg transition-colors hover:bg-pink-400 disabled:cursor-not-allowed disabled:bg-pink-500/40"
+              className="w-full rounded-2xl bg-pink-500 py-3 text-base font-bold text-black shadow-lg transition-colors hover:bg-pink-400 disabled:cursor-not-allowed disabled:bg-pink-500/40"
               onClick={handleGlaze}
               disabled={isGlazeDisabled}
             >
