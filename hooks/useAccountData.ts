@@ -1,10 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
-import {
-  subgraphClient,
-  GET_ACCOUNT_QUERY,
-  type AccountResponse,
-  type AccountData,
-} from "@/lib/subgraph";
+
+export interface AccountData {
+  id: string;
+  spent: string;
+  earned: string;
+  mined: string;
+}
 
 export function useAccountData(address: string | undefined) {
   return useQuery<AccountData | null>({
@@ -13,15 +14,18 @@ export function useAccountData(address: string | undefined) {
       if (!address) return null;
 
       try {
-        const response = await subgraphClient.request<AccountResponse>(
-          GET_ACCOUNT_QUERY,
-          {
-            id: address.toLowerCase(),
-          },
+        const response = await fetch(
+          `/api/subgraph/account?address=${encodeURIComponent(address)}`,
         );
 
-        console.log("Subgraph response:", response);
-        return response.account;
+        if (!response.ok) {
+          console.error("Error fetching subgraph data:", response.statusText);
+          return null;
+        }
+
+        const data = await response.json();
+        console.log("Subgraph response:", data);
+        return data;
       } catch (error) {
         console.error("Error fetching subgraph data:", error);
         return null;
