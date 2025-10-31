@@ -559,27 +559,14 @@ export default function HomePage() {
           </div>
 
           <div className="relative mt-2 overflow-hidden bg-black">
-            <div className="animate-scroll whitespace-nowrap py-1.5 text-sm font-bold text-pink-500">
-              <span className="inline-block px-4">
-                {minerState?.uri && minerState.uri.trim() !== ""
-                  ? minerState.uri
-                  : "We Glaze The World"}
-              </span>
-              <span className="inline-block px-4">
-                {minerState?.uri && minerState.uri.trim() !== ""
-                  ? minerState.uri
-                  : "We Glaze The World"}
-              </span>
-              <span className="inline-block px-4">
-                {minerState?.uri && minerState.uri.trim() !== ""
-                  ? minerState.uri
-                  : "We Glaze The World"}
-              </span>
-              <span className="inline-block px-4">
-                {minerState?.uri && minerState.uri.trim() !== ""
-                  ? minerState.uri
-                  : "We Glaze The World"}
-              </span>
+            <div className="flex animate-scroll whitespace-nowrap py-1.5 text-sm font-bold text-pink-500">
+              {Array.from({ length: 20 }).map((_, i) => (
+                <span key={i} className="inline-block px-4">
+                  {minerState?.uri && minerState.uri.trim() !== ""
+                    ? minerState.uri
+                    : "We Glaze The World"}
+                </span>
+              ))}
             </div>
           </div>
 
