@@ -482,24 +482,26 @@ export default function HomePage() {
         <div className="flex flex-1 flex-col">
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold tracking-wide">GLAZE CORP</h1>
-            <div className="flex items-center gap-2 rounded-full bg-black px-3 py-1">
-              <Avatar className="h-8 w-8 border border-zinc-800">
-                <AvatarImage
-                  src={userAvatarUrl || undefined}
-                  alt={userDisplayName}
-                  className="object-cover"
-                />
-                <AvatarFallback className="bg-zinc-800 text-white">
-                  {initialsFrom(userDisplayName)}
-                </AvatarFallback>
-              </Avatar>
-              <div className="leading-tight text-left">
-                <div className="text-sm font-bold">{userDisplayName}</div>
-                {userHandle ? (
-                  <div className="text-xs text-gray-400">{userHandle}</div>
-                ) : null}
+            {context?.user ? (
+              <div className="flex items-center gap-2 rounded-full bg-black px-3 py-1">
+                <Avatar className="h-8 w-8 border border-zinc-800">
+                  <AvatarImage
+                    src={userAvatarUrl || undefined}
+                    alt={userDisplayName}
+                    className="object-cover"
+                  />
+                  <AvatarFallback className="bg-zinc-800 text-white">
+                    {initialsFrom(userDisplayName)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="leading-tight text-left">
+                  <div className="text-sm font-bold">{userDisplayName}</div>
+                  {userHandle ? (
+                    <div className="text-xs text-gray-400">{userHandle}</div>
+                  ) : null}
+                </div>
               </div>
-            </div>
+            ) : null}
           </div>
 
           <div className="mt-2 grid grid-cols-2 gap-2">
