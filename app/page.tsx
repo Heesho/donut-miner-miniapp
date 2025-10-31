@@ -484,13 +484,11 @@ export default function HomePage() {
             <h1 className="text-2xl font-bold tracking-wide">GLAZE CORP</h1>
             <div className="flex items-center gap-2 rounded-full bg-black px-3 py-1">
               <Avatar className="h-8 w-8 border border-zinc-800">
-                {userAvatarUrl ? (
-                  <AvatarImage
-                    src={userAvatarUrl}
-                    alt={userDisplayName}
-                    className="object-cover"
-                  />
-                ) : null}
+                <AvatarImage
+                  src={userAvatarUrl || undefined}
+                  alt={userDisplayName}
+                  className="object-cover"
+                />
                 <AvatarFallback className="bg-zinc-800 text-white">
                   {initialsFrom(userDisplayName)}
                 </AvatarFallback>
@@ -525,13 +523,11 @@ export default function HomePage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Avatar className="h-8 w-8">
-                    {occupantDisplay.avatarUrl ? (
-                      <AvatarImage
-                        src={occupantDisplay.avatarUrl}
-                        alt={occupantDisplay.primary}
-                        className="object-cover"
-                      />
-                    ) : null}
+                    <AvatarImage
+                      src={occupantDisplay.avatarUrl || undefined}
+                      alt={occupantDisplay.primary}
+                      className="object-cover"
+                    />
                     <AvatarFallback className="bg-zinc-800 text-white text-xs uppercase">
                       {minerState ? (
                         occupantFallbackInitials
