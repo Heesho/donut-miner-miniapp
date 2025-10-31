@@ -615,7 +615,7 @@ export default function HomePage() {
               onChange={(e) => setCustomMessage(e.target.value)}
               placeholder="Add a message (optional)"
               maxLength={100}
-              className="w-full rounded-2xl border-2 border-white bg-black px-4 py-3.5 text-base font-mono text-white placeholder-gray-500 transition-colors focus:border-pink-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-40"
+              className="w-full rounded-lg border border-zinc-800 bg-black px-3 py-2 text-sm font-mono text-white placeholder-gray-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-40"
               disabled={isGlazeDisabled}
             />
 
