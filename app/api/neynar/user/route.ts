@@ -48,6 +48,24 @@ type NeynarAddressResponse =
   | null
   | undefined;
 
+const mergeUsers = (
+  primary: NeynarUser | null | undefined,
+  fallback: NeynarUser | null | undefined,
+): NeynarUser | null => {
+  if (!primary && !fallback) return null;
+  if (!primary) return fallback ?? null;
+  if (!fallback) return primary ?? null;
+  return {
+    fid: primary.fid ?? fallback.fid ?? null,
+    username: primary.username ?? fallback.username ?? null,
+    display_name: primary.display_name ?? fallback.display_name ?? null,
+    displayName: primary.displayName ?? fallback.displayName ?? null,
+    pfp: primary.pfp ?? fallback.pfp ?? null,
+    pfp_url: primary.pfp_url ?? fallback.pfp_url ?? null,
+    profile: primary.profile ?? fallback.profile ?? null,
+  };
+};
+
 const normalizeUser = (
   value: NeynarUser | NeynarUserEnvelope | null | undefined,
 ): NeynarUser | null => {
@@ -174,6 +192,60 @@ const fetchUserByFid = async (fid?: number | null) => {
   return data.result?.user ?? null;
 };
 
+const fetchWarpcastUser = async (params: {
+  username?: string | null;
+  fid?: number | null;
+}) => {
+  const search = new URLSearchParams();
+  if (params.username) {
+    search.set("username", params.username);
+  }
+  if (params.fid || params.fid === 0) {
+    search.set("fid", String(params.fid));
+  }
+  if (!search.toString()) return null;
+  const url = `https://client.warpcast.com/v2/user?${search.toString()}`;
+  const res = await fetch(url, {
+    headers: {
+      accept: "application/json",
+    },
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    if (res.status === 404) return null;
+    throw new Error(`warpcast lookup failed with ${res.status}`);
+  }
+  const data = (await res.json()) as {
+    result?: {
+      user?: {
+        fid?: number | null;
+        username?: string | null;
+        displayName?: string | null;
+        display_name?: string | null;
+        pfp?: { url?: string | null } | null;
+      } | null;
+    };
+  };
+  const user = data.result?.user;
+  if (!user) return null;
+  const display = user.displayName ?? user.display_name ?? null;
+  return {
+    fid: user.fid ?? null,
+    username: user.username ?? null,
+    display_name: display,
+    displayName: display,
+    pfp: user.pfp ?? null,
+    pfp_url: user.pfp?.url ?? null,
+    profile: user.pfp?.url
+      ? ({
+          pfp: { url: user.pfp.url },
+          picture_url: user.pfp.url,
+          pictureUrl: user.pfp.url,
+        } as NeynarUser["profile"])
+      : null,
+  } satisfies NeynarUser;
+};
+
 const fetchAddressUser = async (address: string) => {
   if (!address) return null;
   const url = new URL(
@@ -294,6 +366,26 @@ export async function GET(request: NextRequest) {
         console.error("[neynar:user] fid lookup from handle failed", error);
       }
     }
+    if (
+      sanitizedHandle &&
+      (!enrichedHandleUser || !resolvePfp(enrichedHandleUser))
+    ) {
+      try {
+        const warpcastUser = await fetchWarpcastUser({
+          username: sanitizedHandle,
+          fid: enrichedHandleUser?.fid ?? handleUser?.fid ?? null,
+        });
+        enrichedHandleUser = mergeUsers(
+          enrichedHandleUser ?? handleUser,
+          warpcastUser,
+        );
+      } catch (error) {
+        console.error(
+          "[neynar:user] warpcast lookup from handle failed",
+          error,
+        );
+      }
+    }
 
     if (enrichedHandleUser && resolvePfp(enrichedHandleUser)) {
       return NextResponse.json({
@@ -329,6 +421,27 @@ export async function GET(request: NextRequest) {
         }
       } catch (error) {
         console.error("[neynar:user] fid lookup from address failed", error);
+      }
+    }
+    if (
+      (!enrichedAddressUser || !resolvePfp(enrichedAddressUser)) &&
+      (sanitizedHandle || enrichedAddressUser?.fid !== undefined)
+    ) {
+      try {
+        const warpcastUser = await fetchWarpcastUser({
+          username: sanitizedHandle || enrichedAddressUser?.username ?? null,
+          fid:
+            enrichedAddressUser?.fid ??
+            enrichedHandleUser?.fid ??
+            handleUser?.fid ??
+            null,
+        });
+        enrichedAddressUser = mergeUsers(enrichedAddressUser, warpcastUser);
+      } catch (error) {
+        console.error(
+          "[neynar:user] warpcast lookup from address failed",
+          error,
+        );
       }
     }
 
