@@ -156,6 +156,24 @@ const fetchHandleUser = async (handle: string) => {
   return (data as NeynarUser) ?? null;
 };
 
+const fetchUserByFid = async (fid?: number | null) => {
+  if (!fid && fid !== 0) return null;
+  const url = new URL("https://api.neynar.com/v2/farcaster/user");
+  url.searchParams.set("fid", String(fid));
+  const res = await fetch(url, {
+    headers: buildHeaders(),
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    if (res.status === 404) return null;
+    throw new Error(`fid lookup failed with ${res.status}`);
+  }
+  const data = (await res.json()) as {
+    result?: { user?: NeynarUser | null };
+  };
+  return data.result?.user ?? null;
+};
+
 const fetchAddressUser = async (address: string) => {
   if (!address) return null;
   const url = new URL(
@@ -262,6 +280,36 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    let enrichedHandleUser = handleUser;
+    if (handleUser && !resolvePfp(handleUser)) {
+      try {
+        const fidUser = await fetchUserByFid(handleUser.fid ?? null);
+        if (fidUser) {
+          enrichedHandleUser = normalizeUser({
+            ...(handleUser ?? {}),
+            user: fidUser,
+          });
+        }
+      } catch (error) {
+        console.error("[neynar:user] fid lookup from handle failed", error);
+      }
+    }
+
+    if (enrichedHandleUser && resolvePfp(enrichedHandleUser)) {
+      return NextResponse.json({
+        user: {
+          fid: enrichedHandleUser.fid ?? null,
+          username:
+            enrichedHandleUser.username ?? sanitizedHandle ?? null,
+          displayName:
+            enrichedHandleUser.display_name ??
+            enrichedHandleUser.displayName ??
+            null,
+          pfpUrl: resolvePfp(enrichedHandleUser),
+        },
+      });
+    }
+
     let addressUser: NeynarUser | null = null;
     try {
       addressUser = await fetchAddressUser(normalizedAddress);
@@ -269,12 +317,30 @@ export async function GET(request: NextRequest) {
       console.error("[neynar:user] address lookup failed", error);
     }
 
-    if (!addressUser && !handleUser) {
+    let enrichedAddressUser = addressUser;
+    if (addressUser && !resolvePfp(addressUser)) {
+      try {
+        const fidUser = await fetchUserByFid(addressUser.fid ?? null);
+        if (fidUser) {
+          enrichedAddressUser = normalizeUser({
+            ...(addressUser ?? {}),
+            user: fidUser,
+          });
+        }
+      } catch (error) {
+        console.error("[neynar:user] fid lookup from address failed", error);
+      }
+    }
+
+    const finalHandleUser = enrichedHandleUser ?? handleUser;
+    const finalAddressUser = enrichedAddressUser ?? addressUser;
+
+    if (!finalAddressUser && !finalHandleUser) {
       return NextResponse.json({ user: null });
     }
 
-    const primary = addressUser ?? handleUser ?? null;
-    const secondary = addressUser ? handleUser : null;
+    const primary = finalAddressUser ?? finalHandleUser ?? null;
+    const secondary = finalAddressUser ? finalHandleUser : null;
 
     return NextResponse.json({
       user: {
