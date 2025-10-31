@@ -29,6 +29,25 @@ type NeynarUserEnvelope = {
   profile?: NeynarUser["profile"];
 };
 
+type NeynarAddressResult = {
+  user?: NeynarUserEnvelope | NeynarUser | null;
+  users?:
+    | (NeynarUserEnvelope | NeynarUser | null | undefined)[]
+    | Record<string, NeynarUserEnvelope | NeynarUser | null | undefined>
+    | null;
+};
+
+type NeynarAddressUsersRecord = Record<
+  string,
+  NeynarUserEnvelope | NeynarUser | NeynarUser[] | null | undefined
+>;
+
+type NeynarAddressResponse =
+  | { result?: NeynarAddressResult }
+  | NeynarAddressUsersRecord
+  | null
+  | undefined;
+
 const normalizeUser = (
   value: NeynarUser | NeynarUserEnvelope | null | undefined,
 ): NeynarUser | null => {
@@ -76,6 +95,22 @@ const resolvePfp = (
     null
   );
 };
+
+const hasResult = (
+  value: NeynarAddressResponse,
+): value is { result?: NeynarAddressResult } =>
+  !!value &&
+  !Array.isArray(value) &&
+  typeof value === "object" &&
+  "result" in value;
+
+const isUsersRecord = (
+  value: NeynarAddressResponse,
+): value is NeynarAddressUsersRecord =>
+  !!value &&
+  !Array.isArray(value) &&
+  typeof value === "object" &&
+  !("result" in value);
 
 const buildHeaders = () => {
   if (!apiKey) {
@@ -139,23 +174,11 @@ const fetchAddressUser = async (address: string) => {
     throw new Error(`address lookup failed with ${res.status}`);
   }
 
-  const rawData = (await res.json()) as
-    | {
-        result?: {
-          user?: NeynarUserEnvelope | NeynarUser | null;
-          users?:
-            | (NeynarUserEnvelope | NeynarUser | null | undefined)[]
-            | Record<string, NeynarUserEnvelope | NeynarUser | null | undefined>
-            | null;
-        };
-      }
-    | Record<string, NeynarUserEnvelope | NeynarUser[] | null | undefined>
-    | null
-    | undefined;
+  const rawData = (await res.json()) as NeynarAddressResponse;
 
   const candidates: (NeynarUserEnvelope | NeynarUser | null | undefined)[] = [];
 
-  if (rawData && typeof rawData === "object" && "result" in rawData) {
+  if (hasResult(rawData)) {
     const data = rawData.result;
     if (data?.user) {
       candidates.push(data.user);
@@ -166,7 +189,7 @@ const fetchAddressUser = async (address: string) => {
     } else if (usersField && typeof usersField === "object") {
       candidates.push(...Object.values(usersField));
     }
-  } else if (rawData && typeof rawData === "object") {
+  } else if (isUsersRecord(rawData)) {
     const values = Object.values(rawData);
     for (const value of values) {
       if (!value) continue;
