@@ -8,10 +8,13 @@ export const wagmiConfig = createConfig({
   ssr: true,
   connectors: [farcasterMiniApp()],
   transports: {
-    [base.id]: fallback([http()]),
+    [base.id]: fallback([
+      http(process.env.NEXT_PUBLIC_BASE_RPC_URL),
+      http(),
+    ]),
   },
   storage: createStorage({
     storage: cookieStorage,
   }),
-  pollingInterval: 6_000,
+  pollingInterval: 12_000,
 });
