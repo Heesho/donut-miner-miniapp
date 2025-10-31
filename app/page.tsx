@@ -93,6 +93,7 @@ export default function HomePage() {
   const readyRef = useRef(false);
   const autoConnectAttempted = useRef(false);
   const [context, setContext] = useState<MiniAppContext | null>(null);
+  const [customMessage, setCustomMessage] = useState("");
   const [glazeResult, setGlazeResult] = useState<"success" | "failure" | null>(
     null,
   );
@@ -302,7 +303,7 @@ export default function HomePage() {
           epochId,
           deadline,
           maxPrice,
-          "",
+          customMessage.trim(),
         ],
         value: price,
         chainId: base.id,
@@ -315,7 +316,7 @@ export default function HomePage() {
   }, [
     address,
     connectAsync,
-    context?.user?.username,
+    customMessage,
     minerState,
     primaryConnector,
     resetGlazeResult,
@@ -607,6 +608,16 @@ export default function HomePage() {
                 </CardContent>
               </Card>
             </div>
+
+            <input
+              type="text"
+              value={customMessage}
+              onChange={(e) => setCustomMessage(e.target.value)}
+              placeholder="Add a message (optional)"
+              maxLength={100}
+              className="w-full rounded-2xl border-2 border-white bg-black px-4 py-3.5 text-base font-mono text-white placeholder-gray-500 transition-colors focus:border-pink-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-40"
+              disabled={isGlazeDisabled}
+            />
 
             <Button
               className="w-full rounded-2xl bg-pink-500 py-3.5 text-base font-bold text-black shadow-lg transition-colors hover:bg-pink-400 disabled:cursor-not-allowed disabled:bg-pink-500/40"
