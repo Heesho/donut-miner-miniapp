@@ -32,8 +32,7 @@ export async function GET(request: NextRequest) {
     }
 
     const response = await neynarClient.fetchBulkUsersByEthereumAddress(
-      [normalizedAddress],
-      { addressTypes: ["custody_address", "verified_address"] }
+      [normalizedAddress]
     );
 
     const addressKey = Object.keys(response).find(
