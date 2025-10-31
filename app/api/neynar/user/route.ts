@@ -423,25 +423,27 @@ export async function GET(request: NextRequest) {
         console.error("[neynar:user] fid lookup from address failed", error);
       }
     }
-    if (
-      (!enrichedAddressUser || !resolvePfp(enrichedAddressUser)) &&
-      (sanitizedHandle || enrichedAddressUser?.fid !== undefined)
-    ) {
-      try {
-        const warpcastUser = await fetchWarpcastUser({
-          username: sanitizedHandle || enrichedAddressUser?.username ?? null,
-          fid:
-            enrichedAddressUser?.fid ??
-            enrichedHandleUser?.fid ??
-            handleUser?.fid ??
-            null,
-        });
-        enrichedAddressUser = mergeUsers(enrichedAddressUser, warpcastUser);
-      } catch (error) {
-        console.error(
-          "[neynar:user] warpcast lookup from address failed",
-          error,
-        );
+    if (!enrichedAddressUser || !resolvePfp(enrichedAddressUser)) {
+      const warpcastUsername =
+        sanitizedHandle ?? enrichedAddressUser?.username ?? null;
+      const warpcastFid =
+        enrichedAddressUser?.fid ??
+        enrichedHandleUser?.fid ??
+        handleUser?.fid ??
+        null;
+      if (warpcastUsername || warpcastFid !== null) {
+        try {
+          const warpcastUser = await fetchWarpcastUser({
+            username: warpcastUsername,
+            fid: warpcastFid ?? undefined,
+          });
+          enrichedAddressUser = mergeUsers(enrichedAddressUser, warpcastUser);
+        } catch (error) {
+          console.error(
+            "[neynar:user] warpcast lookup from address failed",
+            error,
+          );
+        }
       }
     }
 
