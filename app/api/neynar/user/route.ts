@@ -49,8 +49,8 @@ export async function GET(request: NextRequest) {
       user: {
         fid: user.fid ?? null,
         username: user.username ?? null,
-        displayName: user.display_name ?? user.displayName ?? null,
-        pfpUrl: user.pfp_url ?? user.pfp?.url ?? null,
+        displayName: user.display_name ?? null,
+        pfpUrl: user.pfp_url ?? null,
       },
     });
   } catch (error) {
