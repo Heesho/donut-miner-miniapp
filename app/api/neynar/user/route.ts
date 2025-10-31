@@ -7,7 +7,6 @@ const neynarClient = apiKey ? new NeynarAPIClient(apiKey) : null;
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const address = searchParams.get("address");
-  const handleParam = searchParams.get("handle");
 
   if (!address) {
     return NextResponse.json(
@@ -24,57 +23,25 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const cleanedAddress = address.trim();
-    if (!cleanedAddress) {
+    const normalizedAddress = address.trim().toLowerCase();
+    if (!normalizedAddress) {
       return NextResponse.json(
         { error: "Address parameter is empty." },
         { status: 400 },
       );
     }
 
-    const normalizedAddress = cleanedAddress.toLowerCase();
-    const cleanedHandle = handleParam?.trim() ?? "";
-    const sanitizedHandle = cleanedHandle.replace(/^@+/, "");
+    const response = await neynarClient.fetchBulkUsersByEthereumAddress(
+      [normalizedAddress],
+      { addressTypes: ["custody_address", "verified_address"] }
+    );
 
-    let user = null;
-    let pfpUrl = null;
+    const addressKey = Object.keys(response).find(
+      key => key.toLowerCase() === normalizedAddress
+    );
 
-    // Try fetching by username first if provided
-    if (sanitizedHandle) {
-      try {
-        const response = await neynarClient.lookupUserByUsername(sanitizedHandle);
-        if (response?.user) {
-          user = response.user;
-          pfpUrl = user.pfp_url || user.pfp?.url || null;
-        }
-      } catch (error) {
-        // Username lookup failed, will try address lookup
-      }
-    }
+    const user = addressKey && response[addressKey]?.[0] ? response[addressKey][0] : null;
 
-    // If no user found by username or no pfp, try by address
-    if (!user || !pfpUrl) {
-      try {
-        const response = await neynarClient.fetchBulkUsersByEthereumAddress([normalizedAddress], { addressTypes: ["custody_address", "verified_address"] });
-
-        // The response format is an object with addresses as keys
-        const addressKey = Object.keys(response).find(
-          key => key.toLowerCase() === normalizedAddress
-        );
-
-        if (addressKey && response[addressKey]?.[0]) {
-          const addressUser = response[addressKey][0];
-          if (!user || !pfpUrl) {
-            user = addressUser;
-            pfpUrl = addressUser.pfp_url || addressUser.pfp?.url || null;
-          }
-        }
-      } catch (error) {
-        // Address lookup failed
-      }
-    }
-
-    // Return user data
     if (!user) {
       return NextResponse.json({ user: null });
     }
@@ -82,9 +49,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       user: {
         fid: user.fid ?? null,
-        username: user.username ?? sanitizedHandle ?? null,
+        username: user.username ?? null,
         displayName: user.display_name ?? user.displayName ?? null,
-        pfpUrl: pfpUrl,
+        pfpUrl: user.pfp_url ?? user.pfp?.url ?? null,
       },
     });
   } catch (error) {
