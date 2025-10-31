@@ -19,15 +19,12 @@ export function useAccountData(address: string | undefined) {
         );
 
         if (!response.ok) {
-          console.error("Error fetching subgraph data:", response.statusText);
           return null;
         }
 
         const data = await response.json();
-        console.log("Subgraph response:", data);
         return data;
       } catch (error) {
-        console.error("Error fetching subgraph data:", error);
         return null;
       }
     },

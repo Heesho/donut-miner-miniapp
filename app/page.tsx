@@ -202,11 +202,6 @@ export default function HomePage() {
   const { data: accountData } = useAccountData(address);
 
   useEffect(() => {
-    console.log("Account Data from Subgraph:", accountData);
-    console.log("User Address:", address);
-  }, [accountData, address]);
-
-  useEffect(() => {
     if (!readyRef.current && minerState) {
       readyRef.current = true;
       sdk.actions.ready().catch(() => {});
