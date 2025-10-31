@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { CONTRACT_ADDRESSES, MULTICALL_ABI } from "@/lib/contracts";
 import { cn } from "@/lib/utils";
+import { useAccountData } from "@/hooks/useAccountData";
 
 type MiniAppContext = {
   user?: {
@@ -196,6 +197,13 @@ export default function HomePage() {
     if (!rawMinerState) return undefined;
     return rawMinerState as unknown as MinerState;
   }, [rawMinerState]);
+
+  const { data: accountData } = useAccountData(address);
+
+  useEffect(() => {
+    console.log("Account Data from Subgraph:", accountData);
+    console.log("User Address:", address);
+  }, [accountData, address]);
 
   useEffect(() => {
     if (!readyRef.current && minerState) {
@@ -628,17 +636,78 @@ export default function HomePage() {
             </Button>
 
             <div>
-              <div className="mb-1 text-[11px] uppercase tracking-wide text-gray-400">
+              <div className="mb-0.5 text-[11px] uppercase tracking-wide text-gray-400">
                 Your Balances
               </div>
-              <div className="flex justify-between text-[13px] font-semibold">
-                <div className="flex items-center gap-2">
-                  <span>🍩</span>
-                  <span>{donutBalanceDisplay}</span>
+
+              <div className="flex justify-between">
+                {/* Left Column - Donut Balance & Mined */}
+                <div className="flex flex-col gap-1 items-start">
+                  <div className="flex items-center gap-1.5 text-[11px] font-semibold">
+                    <span>🍩</span>
+                    <span>{donutBalanceDisplay}</span>
+                  </div>
+                  <div className="flex flex-col items-start text-[11px]">
+                    <span className="text-gray-400 mb-0.5">Mined</span>
+                    <div className="flex items-center gap-1">
+                      <span>🍩</span>
+                      <span className="font-semibold">
+                        {address && accountData?.mined
+                          ? Number(accountData.mined).toLocaleString(undefined, {
+                              maximumFractionDigits: 2,
+                            })
+                          : "0"}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span>Ξ</span>
-                  <span>{ethBalanceDisplay}</span>
+
+                {/* Middle Column - ETH Balance & Spent */}
+                <div className="flex flex-col gap-1 items-start">
+                  <div className="flex items-center gap-1.5 text-[11px] font-semibold">
+                    <span>Ξ</span>
+                    <span>{ethBalanceDisplay}</span>
+                  </div>
+                  <div className="flex flex-col items-start text-[11px]">
+                    <span className="text-gray-400 mb-0.5">Spent</span>
+                    <div className="flex items-center gap-1">
+                      <span>Ξ</span>
+                      <span className="font-semibold">
+                        {address && accountData?.spent
+                          ? Number(accountData.spent).toLocaleString(undefined, {
+                              maximumFractionDigits: 4,
+                            })
+                          : "0"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Column - WETH Balance & Earned */}
+                <div className="flex flex-col gap-1 items-start">
+                  <div className="flex items-center gap-1.5 text-[11px] font-semibold">
+                    <span>wΞ</span>
+                    <span>
+                      {address && accountData?.earned
+                        ? Number(accountData.earned).toLocaleString(undefined, {
+                            maximumFractionDigits: 4,
+                          })
+                        : "0"}
+                    </span>
+                  </div>
+                  <div className="flex flex-col items-start text-[11px]">
+                    <span className="text-gray-400 mb-0.5">Earned</span>
+                    <div className="flex items-center gap-1">
+                      <span>wΞ</span>
+                      <span className="font-semibold">
+                        {address && accountData?.earned
+                          ? Number(accountData.earned).toLocaleString(undefined, {
+                              maximumFractionDigits: 4,
+                            })
+                          : "0"}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
