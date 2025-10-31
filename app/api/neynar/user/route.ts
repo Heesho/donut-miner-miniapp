@@ -102,10 +102,23 @@ const fetchHandleUser = async (handle: string) => {
     if (res.status === 404) return null;
     throw new Error(`handle lookup failed with ${res.status}`);
   }
-  const data = (await res.json()) as {
-    result?: { user?: NeynarUser | null };
-  };
-  return data.result?.user ?? null;
+  const data = (await res.json()) as
+    | {
+        result?: { user?: NeynarUser | null };
+        user?: NeynarUser | null;
+      }
+    | NeynarUser
+    | null
+    | undefined;
+
+  if (!data) return null;
+  if ("result" in data && data.result) {
+    return data.result.user ?? null;
+  }
+  if ("user" in data) {
+    return (data as { user?: NeynarUser | null }).user ?? null;
+  }
+  return (data as NeynarUser) ?? null;
 };
 
 const fetchAddressUser = async (address: string) => {
@@ -126,26 +139,46 @@ const fetchAddressUser = async (address: string) => {
     throw new Error(`address lookup failed with ${res.status}`);
   }
 
-  const data = (await res.json()) as {
-    result?: {
-      user?: NeynarUserEnvelope | NeynarUser | null;
-      users?:
-        | (NeynarUserEnvelope | NeynarUser | null | undefined)[]
-        | Record<string, NeynarUserEnvelope | NeynarUser | null | undefined>
-        | null;
-    };
-  };
+  const rawData = (await res.json()) as
+    | {
+        result?: {
+          user?: NeynarUserEnvelope | NeynarUser | null;
+          users?:
+            | (NeynarUserEnvelope | NeynarUser | null | undefined)[]
+            | Record<string, NeynarUserEnvelope | NeynarUser | null | undefined>
+            | null;
+        };
+      }
+    | Record<string, NeynarUserEnvelope | NeynarUser[] | null | undefined>
+    | null
+    | undefined;
 
   const candidates: (NeynarUserEnvelope | NeynarUser | null | undefined)[] = [];
-  if (data.result?.user) {
-    candidates.push(data.result.user);
+
+  if (rawData && typeof rawData === "object" && "result" in rawData) {
+    const data = rawData.result;
+    if (data?.user) {
+      candidates.push(data.user);
+    }
+    const usersField = data?.users;
+    if (Array.isArray(usersField)) {
+      candidates.push(...usersField);
+    } else if (usersField && typeof usersField === "object") {
+      candidates.push(...Object.values(usersField));
+    }
+  } else if (rawData && typeof rawData === "object") {
+    const values = Object.values(rawData);
+    for (const value of values) {
+      if (!value) continue;
+      if (Array.isArray(value)) {
+        candidates.push(...value);
+      } else {
+        candidates.push(value);
+      }
+    }
   }
-  const usersField = data.result?.users;
-  if (Array.isArray(usersField)) {
-    candidates.push(...usersField);
-  } else if (usersField && typeof usersField === "object") {
-    candidates.push(...Object.values(usersField));
-  }
+
+  if (candidates.length === 0) return null;
 
   const preferred =
     candidates.find((candidate) => !!resolvePfp(candidate)) ?? candidates[0];

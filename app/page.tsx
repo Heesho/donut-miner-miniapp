@@ -347,6 +347,10 @@ export default function HomePage() {
       !!address &&
       minerAddr.toLowerCase() === (address as string).toLowerCase();
 
+    const fallbackAvatarUrl = `https://api.dicebear.com/7.x/shapes/svg?seed=${encodeURIComponent(
+      minerAddr.toLowerCase(),
+    )}`;
+
     const profile = neynarUser?.user ?? null;
     const profileUsername = profile?.username
       ? `@${profile.username}`
@@ -392,7 +396,9 @@ export default function HomePage() {
       ) ?? "";
 
     const avatarUrl =
-      profile?.pfpUrl ?? (isYou ? contextProfile?.pfpUrl ?? null : null);
+      profile?.pfpUrl ??
+      (isYou ? contextProfile?.pfpUrl ?? null : null) ??
+      fallbackAvatarUrl;
 
     const isUnknown =
       !profile && !claimedHandle && !(isYou && (contextHandle || contextDisplayName));
