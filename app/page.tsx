@@ -474,7 +474,7 @@ export default function HomePage() {
           paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 8px)",
         }}
       >
-        <div className="flex flex-1 flex-col">
+        <div className="flex flex-1 flex-col overflow-y-auto">
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold tracking-wide">GLAZE CORP</h1>
             {context?.user ? (
