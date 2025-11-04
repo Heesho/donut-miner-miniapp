@@ -1,7 +1,7 @@
 export const CONTRACT_ADDRESSES = {
   donut: "0x9E6702D8DEad349062945093f1c8a945CA111E73",
   miner: "0x9Bea9c75063095ba8C6bF60F6B50858B140bF869",
-  multicall: "0x0d6fC0Cf23F0B78B1280c4037cA9B47F13Ca19e4",
+  multicall: "0x765e5363d3603eDF39326e7432CE206ec2f23942",
   provider: "0x7a8C895E7826F66e1094532cB435Da725dc3868f",
 } as const;
 
@@ -37,6 +37,29 @@ export const MULTICALL_ABI = [
     name: "mine",
     outputs: [],
     stateMutability: "payable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "epochId",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "deadline",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "maxPaymentTokenAmount",
+        type: "uint256",
+      },
+    ],
+    name: "buy",
+    outputs: [],
+    stateMutability: "nonpayable",
     type: "function",
   },
   {
@@ -113,6 +136,72 @@ export const MULTICALL_ABI = [
           },
         ],
         internalType: "struct Multicall.MinerState",
+        name: "state",
+        type: "tuple",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "account",
+        type: "address",
+      },
+    ],
+    name: "getAuction",
+    outputs: [
+      {
+        components: [
+          {
+            internalType: "uint16",
+            name: "epochId",
+            type: "uint16",
+          },
+          {
+            internalType: "uint192",
+            name: "initPrice",
+            type: "uint192",
+          },
+          {
+            internalType: "uint40",
+            name: "startTime",
+            type: "uint40",
+          },
+          {
+            internalType: "address",
+            name: "paymentToken",
+            type: "address",
+          },
+          {
+            internalType: "uint256",
+            name: "price",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "paymentTokenPrice",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "wethAcummulated",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "wethBalance",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "paymentTokenBalance",
+            type: "uint256",
+          },
+        ],
+        internalType: "struct Multicall.AuctionState",
         name: "state",
         type: "tuple",
       },

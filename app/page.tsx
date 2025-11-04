@@ -20,6 +20,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { CONTRACT_ADDRESSES, MULTICALL_ABI } from "@/lib/contracts";
 import { cn } from "@/lib/utils";
 import { useAccountData } from "@/hooks/useAccountData";
+import { NavBar } from "@/components/nav-bar";
 
 type MiniAppContext = {
   user?: {
@@ -475,12 +476,12 @@ export default function HomePage() {
         className="relative flex h-full w-full max-w-[520px] flex-1 flex-col overflow-hidden rounded-[28px] bg-black px-2 pb-4 shadow-inner"
         style={{
           paddingTop: "calc(env(safe-area-inset-top, 0px) + 8px)",
-          paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 8px)",
+          paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 80px)",
         }}
       >
         <div className="flex flex-1 flex-col overflow-hidden">
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold tracking-wide">GLAZE CORP</h1>
+            <h1 className="text-2xl font-bold tracking-wide">GLAZERY</h1>
             {context?.user ? (
               <div className="flex items-center gap-2 rounded-full bg-black px-3 py-1">
                 <Avatar className="h-8 w-8 border border-zinc-800">
@@ -706,16 +707,9 @@ export default function HomePage() {
               </div>
             </div>
           </div>
-
-          <div className="mt-auto px-2">
-            <p className="mt-3 text-center text-[11px] leading-snug text-gray-400">
-              Pay the glaze price to become the King Glazer. Earn $DONUT every
-              second until another player glazes the donut. 80% of their payment
-              goes back to you.
-            </p>
-          </div>
         </div>
       </div>
+      <NavBar />
     </main>
   );
 }
