@@ -167,14 +167,8 @@ export default function BlazeryPage() {
 
   const auctionState = useMemo(() => {
     if (!rawAuctionState) return undefined;
-    const state = rawAuctionState as unknown as AuctionState;
-    console.log('Auction State:', {
-      address,
-      paymentTokenBalance: state.paymentTokenBalance?.toString(),
-      price: state.price?.toString(),
-    });
-    return state;
-  }, [rawAuctionState, address]);
+    return rawAuctionState as unknown as AuctionState;
+  }, [rawAuctionState]);
 
   useEffect(() => {
     if (!readyRef.current && auctionState) {
