@@ -479,7 +479,7 @@ export default function HomePage() {
           paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 80px)",
         }}
       >
-        <div className="flex flex-1 flex-col overflow-y-auto overflow-x-clip">
+        <div className="flex flex-1 flex-col overflow-hidden">
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold tracking-wide">GLAZERY</h1>
             {context?.user ? (
@@ -576,9 +576,9 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="relative mt-2 h-0" style={{ paddingBottom: "56.25%" }}>
+          <div className="mt-2 -mx-2 w-[calc(100%+1rem)] overflow-hidden">
             <video
-              className="absolute top-0 left-[-0.5rem] w-[calc(100%+1rem)] h-full object-cover"
+              className="aspect-[16/9] w-full object-cover"
               autoPlay
               loop
               muted
