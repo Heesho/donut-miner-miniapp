@@ -631,77 +631,77 @@ export default function HomePage() {
             >
               {buttonLabel}
             </Button>
+          </div>
 
-            <div>
-              <div className="mb-0.5 text-[11px] uppercase tracking-wide text-gray-400">
-                Your Balances
-              </div>
+          <div className="mt-auto px-2 pb-2">
+            <div className="mb-0.5 text-[11px] uppercase tracking-wide text-gray-400">
+              Your Balances
+            </div>
 
-              <div className="flex justify-between">
-                {/* Left Column - Donut Balance & Mined */}
-                <div className="flex flex-col gap-1 items-start">
-                  <div className="flex items-center gap-1.5 text-[11px] font-semibold">
+            <div className="flex justify-between">
+              {/* Left Column - Donut Balance & Mined */}
+              <div className="flex flex-col gap-1 items-start">
+                <div className="flex items-center gap-1.5 text-[11px] font-semibold">
+                  <span>🍩</span>
+                  <span>{donutBalanceDisplay}</span>
+                </div>
+                <div className="flex flex-col items-start text-[11px]">
+                  <span className="text-gray-400 mb-0.5">Mined</span>
+                  <div className="flex items-center gap-1">
                     <span>🍩</span>
-                    <span>{donutBalanceDisplay}</span>
-                  </div>
-                  <div className="flex flex-col items-start text-[11px]">
-                    <span className="text-gray-400 mb-0.5">Mined</span>
-                    <div className="flex items-center gap-1">
-                      <span>🍩</span>
-                      <span className="font-semibold">
-                        {address && accountData?.mined
-                          ? Number(accountData.mined).toLocaleString(undefined, {
-                              maximumFractionDigits: 2,
-                            })
-                          : "0"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Middle Column - ETH Balance & Spent */}
-                <div className="flex flex-col gap-1 items-start">
-                  <div className="flex items-center gap-1.5 text-[11px] font-semibold">
-                    <span>Ξ</span>
-                    <span>{ethBalanceDisplay}</span>
-                  </div>
-                  <div className="flex flex-col items-start text-[11px]">
-                    <span className="text-gray-400 mb-0.5">Spent</span>
-                    <div className="flex items-center gap-1">
-                      <span>Ξ</span>
-                      <span className="font-semibold">
-                        {address && accountData?.spent
-                          ? Number(accountData.spent).toLocaleString(undefined, {
-                              maximumFractionDigits: 4,
-                            })
-                          : "0"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Right Column - WETH Balance & Earned */}
-                <div className="flex flex-col gap-1 items-start">
-                  <div className="flex items-center gap-1.5 text-[11px] font-semibold">
-                    <span>wΞ</span>
-                    <span>
-                      {minerState && minerState.wethBalance !== undefined
-                        ? formatEth(minerState.wethBalance, 4)
-                        : "—"}
+                    <span className="font-semibold">
+                      {address && accountData?.mined
+                        ? Number(accountData.mined).toLocaleString(undefined, {
+                            maximumFractionDigits: 2,
+                          })
+                        : "0"}
                     </span>
                   </div>
-                  <div className="flex flex-col items-start text-[11px]">
-                    <span className="text-gray-400 mb-0.5">Earned</span>
-                    <div className="flex items-center gap-1">
-                      <span>wΞ</span>
-                      <span className="font-semibold">
-                        {address && accountData?.earned
-                          ? Number(accountData.earned).toLocaleString(undefined, {
-                              maximumFractionDigits: 4,
-                            })
-                          : "0"}
-                      </span>
-                    </div>
+                </div>
+              </div>
+
+              {/* Middle Column - ETH Balance & Spent */}
+              <div className="flex flex-col gap-1 items-start">
+                <div className="flex items-center gap-1.5 text-[11px] font-semibold">
+                  <span>Ξ</span>
+                  <span>{ethBalanceDisplay}</span>
+                </div>
+                <div className="flex flex-col items-start text-[11px]">
+                  <span className="text-gray-400 mb-0.5">Spent</span>
+                  <div className="flex items-center gap-1">
+                    <span>Ξ</span>
+                    <span className="font-semibold">
+                      {address && accountData?.spent
+                        ? Number(accountData.spent).toLocaleString(undefined, {
+                            maximumFractionDigits: 4,
+                          })
+                        : "0"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column - WETH Balance & Earned */}
+              <div className="flex flex-col gap-1 items-start">
+                <div className="flex items-center gap-1.5 text-[11px] font-semibold">
+                  <span>wΞ</span>
+                  <span>
+                    {minerState && minerState.wethBalance !== undefined
+                      ? formatEth(minerState.wethBalance, 4)
+                      : "—"}
+                  </span>
+                </div>
+                <div className="flex flex-col items-start text-[11px]">
+                  <span className="text-gray-400 mb-0.5">Earned</span>
+                  <div className="flex items-center gap-1">
+                    <span>wΞ</span>
+                    <span className="font-semibold">
+                      {address && accountData?.earned
+                        ? Number(accountData.earned).toLocaleString(undefined, {
+                            maximumFractionDigits: 4,
+                          })
+                        : "0"}
+                    </span>
                   </div>
                 </div>
               </div>
