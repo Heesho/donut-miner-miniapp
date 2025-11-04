@@ -8,9 +8,10 @@ import {
   useReadContract,
   useWaitForTransactionReceipt,
   useWriteContract,
+  useSimulateContract,
 } from "wagmi";
 import { base } from "wagmi/chains";
-import { formatEther, formatUnits, zeroAddress, type Address } from "viem";
+import { formatEther, formatUnits, zeroAddress, type Address, maxUint256 } from "viem";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -39,7 +40,8 @@ type AuctionState = {
   paymentTokenBalance: bigint;
 };
 
-const DEADLINE_BUFFER_SECONDS = 15 * 60;
+const DEADLINE_BUFFER_SECONDS = 5 * 60;
+const LP_TOKEN_ADDRESS = "0xc3B9bd6F7d4bFcc22696a7bC1CC83948a33d7FAb" as Address;
 
 const toBigInt = (value: bigint | number) =>
   typeof value === "bigint" ? value : BigInt(value);
@@ -69,6 +71,7 @@ export default function BlazeryPage() {
   const [blazeResult, setBlazeResult] = useState<"success" | "failure" | null>(
     null,
   );
+  const [txStep, setTxStep] = useState<"idle" | "approving" | "buying">("idle");
   const blazeResultTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
@@ -170,6 +173,19 @@ export default function BlazeryPage() {
     return rawAuctionState as unknown as AuctionState;
   }, [rawAuctionState]);
 
+  const ERC20_ABI = [
+    {
+      inputs: [
+        { internalType: "address", name: "spender", type: "address" },
+        { internalType: "uint256", name: "amount", type: "uint256" },
+      ],
+      name: "approve",
+      outputs: [{ internalType: "bool", name: "", type: "bool" }],
+      stateMutability: "nonpayable",
+      type: "function",
+    },
+  ] as const;
+
   useEffect(() => {
     if (!readyRef.current && auctionState) {
       readyRef.current = true;
@@ -193,15 +209,43 @@ export default function BlazeryPage() {
   useEffect(() => {
     if (!receipt) return;
     if (receipt.status === "success" || receipt.status === "reverted") {
-      showBlazeResult(receipt.status === "success" ? "success" : "failure");
-      refetchAuctionState();
-      const resetTimer = setTimeout(() => {
+      if (receipt.status === "reverted") {
+        showBlazeResult("failure");
+        setTxStep("idle");
+        refetchAuctionState();
+        const resetTimer = setTimeout(() => {
+          resetWrite();
+        }, 500);
+        return () => clearTimeout(resetTimer);
+      }
+
+      // If approval succeeded, now call buy
+      if (txStep === "approving") {
         resetWrite();
-      }, 500);
-      return () => clearTimeout(resetTimer);
+        setTxStep("buying");
+        return;
+      }
+
+      // If buy succeeded
+      if (txStep === "buying") {
+        showBlazeResult("success");
+        setTxStep("idle");
+        refetchAuctionState();
+        const resetTimer = setTimeout(() => {
+          resetWrite();
+        }, 500);
+        return () => clearTimeout(resetTimer);
+      }
     }
     return;
-  }, [receipt, refetchAuctionState, resetWrite, showBlazeResult]);
+  }, [receipt, refetchAuctionState, resetWrite, showBlazeResult, txStep]);
+
+  // Auto-trigger buy after approval
+  useEffect(() => {
+    if (txStep === "buying" && !isWriting && !isConfirming && !txHash) {
+      handleBlaze();
+    }
+  }, [txStep, isWriting, isConfirming, txHash, handleBlaze]);
 
   const handleBlaze = useCallback(async () => {
     if (!auctionState) return;
@@ -221,23 +265,43 @@ export default function BlazeryPage() {
       if (!targetAddress) {
         throw new Error("Unable to determine wallet address.");
       }
+
       const price = auctionState.price;
       const epochId = toBigInt(auctionState.epochId);
       const deadline = BigInt(
         Math.floor(Date.now() / 1000) + DEADLINE_BUFFER_SECONDS,
       );
-      const maxPaymentTokenAmount = price === 0n ? 0n : (price * 105n) / 100n;
-      await writeContract({
-        account: targetAddress as Address,
-        address: CONTRACT_ADDRESSES.multicall as Address,
-        abi: MULTICALL_ABI,
-        functionName: "buy",
-        args: [epochId, deadline, maxPaymentTokenAmount],
-        chainId: base.id,
-      });
+      const maxPaymentTokenAmount = price;
+
+      // If we're in idle or approval failed, start with approval
+      if (txStep === "idle") {
+        setTxStep("approving");
+        await writeContract({
+          account: targetAddress as Address,
+          address: LP_TOKEN_ADDRESS,
+          abi: ERC20_ABI,
+          functionName: "approve",
+          args: [CONTRACT_ADDRESSES.multicall as Address, price],
+          chainId: base.id,
+        });
+        return;
+      }
+
+      // If approval succeeded, now call buy
+      if (txStep === "buying") {
+        await writeContract({
+          account: targetAddress as Address,
+          address: CONTRACT_ADDRESSES.multicall as Address,
+          abi: MULTICALL_ABI,
+          functionName: "buy",
+          args: [epochId, deadline, maxPaymentTokenAmount],
+          chainId: base.id,
+        });
+      }
     } catch (error) {
       console.error("Failed to blaze:", error);
       showBlazeResult("failure");
+      setTxStep("idle");
       resetWrite();
     }
   }, [
@@ -249,6 +313,7 @@ export default function BlazeryPage() {
     resetWrite,
     showBlazeResult,
     writeContract,
+    txStep,
   ]);
 
   const auctionPriceDisplay = auctionState
@@ -264,10 +329,12 @@ export default function BlazeryPage() {
     if (blazeResult === "success") return "SUCCESS";
     if (blazeResult === "failure") return "FAILURE";
     if (isWriting || isConfirming) {
-      return "BLAZING…";
+      if (txStep === "approving") return "APPROVING…";
+      if (txStep === "buying") return "BLAZING…";
+      return "PROCESSING…";
     }
     return "BLAZE";
-  }, [blazeResult, isConfirming, isWriting, auctionState]);
+  }, [blazeResult, isConfirming, isWriting, auctionState, txStep]);
 
   const isBlazeDisabled =
     !auctionState || isWriting || isConfirming || blazeResult !== null;
