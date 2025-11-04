@@ -576,9 +576,9 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="mt-2 -mx-2 overflow-hidden">
+          <div className="relative mt-2 -mx-2 left-0 right-0 overflow-hidden">
             <video
-              className="aspect-[16/9] w-full object-cover"
+              className="aspect-[16/9] w-[calc(100%+1rem)] object-cover"
               autoPlay
               loop
               muted
