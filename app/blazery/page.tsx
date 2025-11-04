@@ -206,47 +206,6 @@ export default function BlazeryPage() {
       chainId: base.id,
     });
 
-  useEffect(() => {
-    if (!receipt) return;
-    if (receipt.status === "success" || receipt.status === "reverted") {
-      if (receipt.status === "reverted") {
-        showBlazeResult("failure");
-        setTxStep("idle");
-        refetchAuctionState();
-        const resetTimer = setTimeout(() => {
-          resetWrite();
-        }, 500);
-        return () => clearTimeout(resetTimer);
-      }
-
-      // If approval succeeded, now call buy
-      if (txStep === "approving") {
-        resetWrite();
-        setTxStep("buying");
-        return;
-      }
-
-      // If buy succeeded
-      if (txStep === "buying") {
-        showBlazeResult("success");
-        setTxStep("idle");
-        refetchAuctionState();
-        const resetTimer = setTimeout(() => {
-          resetWrite();
-        }, 500);
-        return () => clearTimeout(resetTimer);
-      }
-    }
-    return;
-  }, [receipt, refetchAuctionState, resetWrite, showBlazeResult, txStep]);
-
-  // Auto-trigger buy after approval
-  useEffect(() => {
-    if (txStep === "buying" && !isWriting && !isConfirming && !txHash) {
-      handleBlaze();
-    }
-  }, [txStep, isWriting, isConfirming, txHash, handleBlaze]);
-
   const handleBlaze = useCallback(async () => {
     if (!auctionState) return;
     resetBlazeResult();
@@ -315,6 +274,47 @@ export default function BlazeryPage() {
     writeContract,
     txStep,
   ]);
+
+  useEffect(() => {
+    if (!receipt) return;
+    if (receipt.status === "success" || receipt.status === "reverted") {
+      if (receipt.status === "reverted") {
+        showBlazeResult("failure");
+        setTxStep("idle");
+        refetchAuctionState();
+        const resetTimer = setTimeout(() => {
+          resetWrite();
+        }, 500);
+        return () => clearTimeout(resetTimer);
+      }
+
+      // If approval succeeded, now call buy
+      if (txStep === "approving") {
+        resetWrite();
+        setTxStep("buying");
+        return;
+      }
+
+      // If buy succeeded
+      if (txStep === "buying") {
+        showBlazeResult("success");
+        setTxStep("idle");
+        refetchAuctionState();
+        const resetTimer = setTimeout(() => {
+          resetWrite();
+        }, 500);
+        return () => clearTimeout(resetTimer);
+      }
+    }
+    return;
+  }, [receipt, refetchAuctionState, resetWrite, showBlazeResult, txStep]);
+
+  // Auto-trigger buy after approval
+  useEffect(() => {
+    if (txStep === "buying" && !isWriting && !isConfirming && !txHash) {
+      handleBlaze();
+    }
+  }, [txStep, isWriting, isConfirming, txHash, handleBlaze]);
 
   const auctionPriceDisplay = auctionState
     ? formatEth(auctionState.price, auctionState.price === 0n ? 0 : 5)
