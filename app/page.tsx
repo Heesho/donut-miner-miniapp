@@ -21,6 +21,7 @@ import { CONTRACT_ADDRESSES, MULTICALL_ABI } from "@/lib/contracts";
 import { cn } from "@/lib/utils";
 import { useAccountData } from "@/hooks/useAccountData";
 import { NavBar } from "@/components/nav-bar";
+import { AddToFarcasterDialog } from "@/components/add-to-farcaster-dialog";
 
 type MiniAppContext = {
   user?: {
@@ -472,6 +473,9 @@ export default function HomePage() {
 
   return (
     <main className="flex h-screen w-screen justify-center overflow-hidden bg-black font-mono text-white">
+      {/* Add to Farcaster Dialog - shows on first visit */}
+      <AddToFarcasterDialog showOnFirstVisit={true} />
+
       <div
         className="relative flex h-full w-full max-w-[520px] flex-1 flex-col overflow-hidden rounded-[28px] bg-black px-2 pb-4 shadow-inner"
         style={{

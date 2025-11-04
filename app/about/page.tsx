@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { sdk } from "@farcaster/miniapp-sdk";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { NavBar } from "@/components/nav-bar";
+import { AddToFarcasterButton } from "@/components/add-to-farcaster-button";
 
 type MiniAppContext = {
   user?: {
@@ -178,6 +179,19 @@ export default function AboutPage() {
                 <li className="pl-6 list-none">- Glaze Corp by @heesh</li>
                 <li className="pl-6 list-none">- Pinky Glazer by @bigbroc</li>
               </ul>
+            </section>
+
+            <section className="pb-4">
+              <h2 className="text-lg font-bold text-pink-400 mb-2">
+                Install Glaze Corp
+              </h2>
+              <p className="text-sm text-gray-300 mb-3">
+                Add this Mini App to your Farcaster profile for quick access and notifications about glaze activity.
+              </p>
+              <AddToFarcasterButton
+                className="w-full"
+                variant="default"
+              />
             </section>
           </div>
         </div>
