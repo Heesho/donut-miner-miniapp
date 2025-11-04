@@ -73,8 +73,8 @@ export default function AboutPage() {
           paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 80px)",
         }}
       >
-        <div className="flex flex-1 flex-col overflow-y-auto scrollbar-hide">
-          <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-1 flex-col overflow-hidden">
+          <div className="sticky top-0 z-10 bg-black pb-2 flex items-center justify-between">
             <h1 className="text-2xl font-bold tracking-wide">ABOUT</h1>
             {context?.user ? (
               <div className="flex items-center gap-2 rounded-full bg-black px-3 py-1">
@@ -98,93 +98,112 @@ export default function AboutPage() {
             ) : null}
           </div>
 
-          <div className="space-y-6 px-2">
+          <div className="space-y-6 px-2 overflow-y-auto scrollbar-hide flex-1">
             <section>
               <h2 className="text-lg font-bold text-pink-400 mb-2">
-                What is Glaze Corp?
-              </h2>
-              <p className="text-sm text-gray-300 leading-relaxed">
-                Glaze Corp is a competitive donut mining game where players race
-                to control the glaze factory. Pay the current price to become
-                the King Glazer and earn $DONUT tokens every second until
-                another player takes your place.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-lg font-bold text-pink-400 mb-2">
-                How Does It Work?
-              </h2>
-              <div className="space-y-3 text-sm text-gray-300">
-                <div>
-                  <h3 className="font-bold text-white mb-1">1. Glazery</h3>
-                  <p className="leading-relaxed">
-                    Pay the glaze price in ETH to become the King Glazer. You'll
-                    earn $DONUT tokens every second at the current glaze rate.
-                    When another player glazes, you receive 80% of their payment
-                    back as WETH.
-                  </p>
-                </div>
-                <div>
-                  <h3 className="font-bold text-white mb-1">2. Blazery</h3>
-                  <p className="leading-relaxed">
-                    Use the Blazery to participate in Dutch auctions. Buy
-                    accumulated WETH from the protocol using DONUT-WETH LP
-                    tokens. The auction price decreases over time, so timing is
-                    everything.
-                  </p>
-                </div>
-              </div>
-            </section>
-
-            <section>
-              <h2 className="text-lg font-bold text-pink-400 mb-2">
-                Economics
+                What Is $DONUT
               </h2>
               <div className="space-y-2 text-sm text-gray-300">
                 <p className="leading-relaxed">
-                  The price to glaze increases with each transaction, creating a
-                  competitive dynamic. 80% of each payment goes to the previous
-                  King Glazer, while 20% is accumulated in the protocol for
-                  Dutch auctions.
+                  $DONUT is a store-of-value token on Base.
                 </p>
                 <p className="leading-relaxed">
-                  The glaze rate (donuts per second) also increases over time,
-                  rewarding early and strategic players who time their entries
-                  well.
+                  It is mined through a continuous Dutch auction instead of proof-of-work or staking.
+                </p>
+                <p className="leading-relaxed">
+                  Auction revenue increases $DONUT's liquidity and scarcity.
                 </p>
               </div>
             </section>
 
             <section>
-              <h2 className="text-lg font-bold text-pink-400 mb-2">Strategy</h2>
-              <ul className="space-y-2 text-sm text-gray-300 list-disc list-inside">
-                <li>Monitor the current price and glaze rate</li>
-                <li>Consider how long you can hold the position</li>
-                <li>Watch for auction opportunities in the Blazery</li>
-                <li>Balance between mining donuts and participating in auctions</li>
+              <h2 className="text-lg font-bold text-pink-400 mb-2">
+                How Mining Works
+              </h2>
+              <div className="space-y-2 text-sm text-gray-300">
+                <p className="leading-relaxed">
+                  Only one active miner at a time, called the King Glazer.
+                </p>
+                <p className="leading-relaxed">
+                  The right to mine is bought with ETH through a continuous Dutch auction:
+                </p>
+                <ul className="list-disc list-inside pl-4 space-y-1">
+                  <li>Price doubles after each purchase.</li>
+                  <li>Then decays to 0 over one hour.</li>
+                  <li>Anyone can purchase control of emissions at the current price.</li>
+                </ul>
+              </div>
+            </section>
+
+            <section>
+              <h2 className="text-lg font-bold text-pink-400 mb-2">
+                Revenue Split
+              </h2>
+              <ul className="space-y-1 text-sm text-gray-300 list-disc list-inside">
+                <li>80% → previous King Glazer</li>
+                <li>15% → treasury (Blazery)</li>
+                <li>5% → provider (frontend host)</li>
               </ul>
             </section>
 
             <section>
               <h2 className="text-lg font-bold text-pink-400 mb-2">
-                Built on Base
+                Emission Schedule
+              </h2>
+              <ul className="space-y-1 text-sm text-gray-300 list-disc list-inside">
+                <li>Starts at 10 DONUT / sec</li>
+                <li>Halving every 10 days</li>
+                <li>Tail emission: 0.01 DONUT / sec (forever)</li>
+              </ul>
+            </section>
+
+            <section>
+              <h2 className="text-lg font-bold text-pink-400 mb-2">
+                Proof of Just-In-Time Stake
+              </h2>
+              <div className="space-y-2 text-sm text-gray-300">
+                <p className="leading-relaxed">
+                  ETH is "staked" only while controlling emissions.
+                </p>
+                <ul className="list-disc list-inside pl-4 space-y-1">
+                  <li>Profit if the next purchase pays more.</li>
+                  <li>Lose if it pays less.</li>
+                  <li>Earn $DONUT the entire time you hold control.</li>
+                </ul>
+              </div>
+            </section>
+
+            <section>
+              <h2 className="text-lg font-bold text-pink-400 mb-2">
+                Treasury
               </h2>
               <p className="text-sm text-gray-300 leading-relaxed">
-                Glaze Corp runs entirely on Base, Coinbase's Ethereum L2. All
-                transactions are fast and cheap, making it easy to compete for
-                the King Glazer position and participate in auctions.
+                Treasury ETH is used to buy and burn DONUT-WETH LP in the Blazery.
+              </p>
+              <p className="text-sm text-gray-300 leading-relaxed mt-2">
+                Once sufficient liquidity is established, the Glazery can be upgraded to buy and burn DONUT directly, or governance can decide to acquire other assets or reinvest the treasury.
               </p>
             </section>
 
             <section className="pb-4">
               <h2 className="text-lg font-bold text-pink-400 mb-2">
-                Join the Competition
+                Builder Codes
               </h2>
-              <p className="text-sm text-gray-300 leading-relaxed">
-                Head over to the Glazery to start mining donuts, or check out
-                the Blazery for auction opportunities. May the best glazer win!
-              </p>
+              <div className="space-y-2 text-sm text-gray-300">
+                <p className="leading-relaxed">
+                  Anyone can host their own Donut Shop by deploying a frontend.
+                </p>
+                <p className="leading-relaxed">
+                  Add your builder code to earn 5% of all purchases made through your shop.
+                </p>
+                <p className="leading-relaxed">
+                  The protocol will launch with two official Donut Shops:
+                </p>
+                <ul className="list-disc list-inside pl-4 space-y-1">
+                  <li>Glaze Corp by @heesh</li>
+                  <li>Pinky Glazer by @bigbroc</li>
+                </ul>
+              </div>
             </section>
           </div>
         </div>
