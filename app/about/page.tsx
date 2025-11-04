@@ -117,9 +117,9 @@ export default function AboutPage() {
               <ul className="space-y-1 text-sm text-gray-300 list-disc list-inside">
                 <li>Only one active miner at a time, called the King Glazer</li>
                 <li>The right to mine is bought with ETH through a continuous Dutch auction:</li>
-                <li className="pl-4">Price doubles after each purchase</li>
-                <li className="pl-4">Then decays to 0 over one hour</li>
-                <li className="pl-4">Anyone can purchase control of emissions at the current price</li>
+                <li className="pl-6 list-none">- Price doubles after each purchase</li>
+                <li className="pl-6 list-none">- Then decays to 0 over one hour</li>
+                <li className="pl-6 list-none">- Anyone can purchase control of emissions at the current price</li>
               </ul>
             </section>
 
@@ -175,8 +175,8 @@ export default function AboutPage() {
                 <li>Anyone can host their own Donut Shop by deploying a frontend</li>
                 <li>Add your builder code to earn 5% of all purchases made through your shop</li>
                 <li>The protocol will launch with two official Donut Shops:</li>
-                <li className="pl-4">Glaze Corp by @heesh</li>
-                <li className="pl-4">Pinky Glazer by @bigbroc</li>
+                <li className="pl-6 list-none">- Glaze Corp by @heesh</li>
+                <li className="pl-6 list-none">- Pinky Glazer by @bigbroc</li>
               </ul>
             </section>
           </div>
