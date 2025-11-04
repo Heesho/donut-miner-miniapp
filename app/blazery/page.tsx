@@ -35,7 +35,7 @@ type AuctionState = {
   paymentToken: Address;
   price: bigint;
   paymentTokenPrice: bigint;
-  wethAcummulated: bigint;
+  wethAccumulated: bigint;
   wethBalance: bigint;
   paymentTokenBalance: bigint;
 };
@@ -321,7 +321,7 @@ export default function BlazeryPage() {
     : "—";
 
   const claimableDisplay = auctionState
-    ? formatEth(auctionState.wethAcummulated, 8)
+    ? formatEth(auctionState.wethAccumulated, 8)
     : "—";
 
   const buttonLabel = useMemo(() => {
@@ -416,7 +416,7 @@ export default function BlazeryPage() {
                   $
                   {auctionState
                     ? (
-                        Number(formatEther(auctionState.wethAcummulated)) * 3500
+                        Number(formatEther(auctionState.wethAccumulated)) * 3500
                       ).toFixed(2)
                     : "0.00"}
                 </div>

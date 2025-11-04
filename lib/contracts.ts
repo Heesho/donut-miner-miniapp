@@ -1,7 +1,7 @@
 export const CONTRACT_ADDRESSES = {
   donut: "0x9E6702D8DEad349062945093f1c8a945CA111E73",
   miner: "0x9Bea9c75063095ba8C6bF60F6B50858B140bF869",
-  multicall: "0x3eE553912ba4262Ddd955DD5F910bA0844B16278",
+  multicall: "0xe03a89eb8b75d73Caf762a81dA260106fD42F18A",
   provider: "0x7a8C895E7826F66e1094532cB435Da725dc3868f",
 } as const;
 
@@ -187,7 +187,7 @@ export const MULTICALL_ABI = [
           },
           {
             internalType: "uint256",
-            name: "wethAcummulated",
+            name: "wethAccumulated",
             type: "uint256",
           },
           {
