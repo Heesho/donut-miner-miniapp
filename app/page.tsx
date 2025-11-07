@@ -375,7 +375,6 @@ export default function HomePage() {
     const labelCandidates = [
       profileDisplayName,
       profileUsername,
-      claimedHandle,
       isYou ? contextDisplayName : null,
       isYou ? contextHandle : null,
       addressLabel,
