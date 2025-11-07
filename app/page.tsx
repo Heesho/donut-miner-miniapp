@@ -572,8 +572,8 @@ export default function HomePage() {
             <div className="flex animate-scroll whitespace-nowrap py-1.5 text-sm font-bold text-pink-500">
               {Array.from({ length: 20 }).map((_, i) => (
                 <span key={i} className="inline-block px-4">
-                  {minerState?.uri && minerState.uri.trim() !== ""
-                    ? minerState.uri
+                  {occupantDisplay.primary !== "—"
+                    ? `Glaze Brought To You By ${occupantDisplay.primary}`
                     : "We Glaze The World"}
                 </span>
               ))}
