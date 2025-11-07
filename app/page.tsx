@@ -567,8 +567,8 @@ export default function HomePage() {
             </Card>
           </div>
 
-          <div className="relative mt-2 overflow-hidden bg-black">
-            <div className="flex animate-scroll whitespace-nowrap py-1.5 text-sm font-bold text-pink-500">
+          <div className="relative mt-1 overflow-hidden bg-black">
+            <div className="flex animate-scroll whitespace-nowrap py-1 text-sm font-bold text-pink-500">
               {Array.from({ length: 1000 }).map((_, i) => (
                 <span key={i} className="inline-block px-8">
                   {minerState?.uri && minerState.uri.trim() !== ""
@@ -579,7 +579,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="mt-2 -mx-2 w-[calc(100%+1rem)] overflow-hidden">
+          <div className="mt-1 -mx-2 w-[calc(100%+1rem)] overflow-hidden">
             <video
               className="aspect-[16/9] w-full object-cover"
               autoPlay
