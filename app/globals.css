@@ -28,17 +28,17 @@ body {
   animation: glow-pulse 1.8s ease-in-out infinite;
 }
 
-@keyframes scroll {
+@keyframes scroll-text {
   0% {
     transform: translateX(0);
   }
   100% {
-    transform: translateX(-50%);
+    transform: translateX(-4000px);
   }
 }
 
 .animate-scroll {
-  animation: scroll 10s linear infinite;
+  animation: scroll-text 60s linear infinite;
   will-change: transform;
 }
 

@@ -569,8 +569,8 @@ export default function HomePage() {
 
           <div className="relative mt-2 overflow-hidden bg-black">
             <div className="flex animate-scroll whitespace-nowrap py-1.5 text-sm font-bold text-pink-500">
-              {Array.from({ length: 40 }).map((_, i) => (
-                <span key={i} className="inline-block px-4">
+              {Array.from({ length: 1000 }).map((_, i) => (
+                <span key={i} className="inline-block px-8">
                   {minerState?.uri && minerState.uri.trim() !== ""
                     ? minerState.uri
                     : "We Glaze The World"}
