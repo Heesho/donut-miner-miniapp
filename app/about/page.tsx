@@ -100,6 +100,11 @@ export default function AboutPage() {
           </div>
 
           <div className="space-y-6 px-2 overflow-y-auto scrollbar-hide flex-1">
+            <AddToFarcasterButton
+              className="w-full"
+              variant="default"
+            />
+
             <section>
               <h2 className="text-lg font-bold text-pink-400 mb-2">
                 What Is $DONUT
@@ -179,19 +184,6 @@ export default function AboutPage() {
                 <li className="pl-6 list-none">- GlazeCorp by @heesh</li>
                 <li className="pl-6 list-none">- Pinky Glazer by @bigbroc</li>
               </ul>
-            </section>
-
-            <section className="pb-4">
-              <h2 className="text-lg font-bold text-pink-400 mb-2">
-                Install GlazeCorp
-              </h2>
-              <p className="text-sm text-gray-300 mb-3">
-                Add this Mini App to your Farcaster profile for quick access and notifications about glaze activity.
-              </p>
-              <AddToFarcasterButton
-                className="w-full"
-                variant="default"
-              />
             </section>
           </div>
         </div>
