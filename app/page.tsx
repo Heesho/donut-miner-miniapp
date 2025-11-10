@@ -556,7 +556,7 @@ export default function HomePage() {
               </div>
 
               {/* Glazed Column */}
-              <div className="grid gap-1.5">
+              <div className="grid gap-1.5 text-center">
                 <div className="text-[10px] font-bold uppercase tracking-[0.08em] text-gray-400">
                   GLAZED
                 </div>
@@ -566,7 +566,7 @@ export default function HomePage() {
               </div>
 
               {/* PNL Column */}
-              <div className="grid gap-1.5">
+              <div className="grid gap-1.5 text-right">
                 <div className="text-[10px] font-bold uppercase tracking-[0.08em] text-gray-400">
                   PNL
                 </div>
