@@ -572,13 +572,22 @@ export default function HomePage() {
                 </div>
                 <div className={cn(
                   "text-lg font-semibold",
-                  minerState && ((minerState.price * 80n) / 100n - minerState.initPrice / 2n) >= 0n
+                  minerState && (() => {
+                    const halfInitPrice = minerState.initPrice / 2n;
+                    const pnl = minerState.price > minerState.initPrice
+                      ? (minerState.price * 80n) / 100n - halfInitPrice
+                      : minerState.price - halfInitPrice;
+                    return pnl >= 0n;
+                  })()
                     ? "text-green-400"
                     : "text-red-400"
                 )}>
                   {minerState
                     ? (() => {
-                        const pnl = (minerState.price * 80n) / 100n - minerState.initPrice / 2n;
+                        const halfInitPrice = minerState.initPrice / 2n;
+                        const pnl = minerState.price > minerState.initPrice
+                          ? (minerState.price * 80n) / 100n - halfInitPrice
+                          : minerState.price - halfInitPrice;
                         const sign = pnl >= 0n ? "+" : "-";
                         const absolutePnl = pnl >= 0n ? pnl : -pnl;
                         return `${sign}Ξ${formatEth(absolutePnl, 5)}`;
