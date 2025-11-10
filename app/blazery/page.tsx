@@ -41,7 +41,7 @@ type AuctionState = {
 };
 
 const DEADLINE_BUFFER_SECONDS = 5 * 60;
-const LP_TOKEN_ADDRESS = "0xc3B9bd6F7d4bFcc22696a7bC1CC83948a33d7FAb" as Address;
+const LP_TOKEN_ADDRESS = "0xD1DbB2E56533C55C3A637D13C53aeEf65c5D5703" as Address;
 
 const toBigInt = (value: bigint | number) =>
   typeof value === "bigint" ? value : BigInt(value);
