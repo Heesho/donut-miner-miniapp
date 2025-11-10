@@ -613,7 +613,7 @@ export default function HomePage() {
                   <div className="text-2xl font-semibold text-pink-400">
                     {glazePriceDisplay}
                   </div>
-                  <div className="text-xs text-gray-400">
+                  <div className="text-xs text-gray-400 -mt-1">
                     $
                     {minerState
                       ? (
