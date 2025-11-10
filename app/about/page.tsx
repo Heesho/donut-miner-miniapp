@@ -176,14 +176,14 @@ export default function AboutPage() {
                 <li>Anyone can host their own Donut Shop by deploying a frontend</li>
                 <li>Add your builder code to earn 5% of all purchases made through your shop</li>
                 <li>The protocol will launch with two official Donut Shops:</li>
-                <li className="pl-6 list-none">- Glaze Corp by @heesh</li>
+                <li className="pl-6 list-none">- GlazeCorp by @heesh</li>
                 <li className="pl-6 list-none">- Pinky Glazer by @bigbroc</li>
               </ul>
             </section>
 
             <section className="pb-4">
               <h2 className="text-lg font-bold text-pink-400 mb-2">
-                Install Glaze Corp
+                Install GlazeCorp
               </h2>
               <p className="text-sm text-gray-300 mb-3">
                 Add this Mini App to your Farcaster profile for quick access and notifications about glaze activity.

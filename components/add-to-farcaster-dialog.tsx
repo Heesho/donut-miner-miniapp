@@ -135,7 +135,7 @@ export function AddToFarcasterDialog({
             <div className="rounded-2xl bg-gradient-to-br from-pink-500 to-pink-600 p-4">
               <img
                 src="/media/icon.png"
-                alt="Glaze Corp"
+                alt="GlazeCorp"
                 className="h-16 w-16"
               />
             </div>
@@ -144,7 +144,7 @@ export function AddToFarcasterDialog({
           {/* Content */}
           <div className="mb-6 text-center">
             <h2 className="mb-2 text-2xl font-bold text-white">
-              Add Glaze Corp
+              Add GlazeCorp
             </h2>
             <p className="text-sm text-gray-400">
               Install this Mini App to your Farcaster profile for quick access.

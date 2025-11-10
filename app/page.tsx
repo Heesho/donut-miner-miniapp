@@ -613,6 +613,14 @@ export default function HomePage() {
                   <div className="text-2xl font-semibold text-pink-400">
                     {glazePriceDisplay}
                   </div>
+                  <div className="text-xs text-gray-400">
+                    $
+                    {minerState
+                      ? (
+                          Number(formatEther(minerState.price)) * 3500
+                        ).toFixed(2)
+                      : "0.00"}
+                  </div>
                 </CardContent>
               </Card>
             </div>

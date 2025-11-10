@@ -6,9 +6,9 @@
   },
   "miniapp": {
     "version": "1",
-    "name": "Glaze Corp",
+    "name": "GlazeCorp",
     "tagline": "Together we glaze the world",
-    "description": "Command Glaze Corp's donut mine, compete for control, and keep the rewards flowing on Base.",
+    "description": "Command GlazeCorp's donut mine, compete for control, and keep the rewards flowing on Base.",
     "iconUrl": "https://glazecorp.vercel.app/media/icon.png",
     "homeUrl": "https://glazecorp.vercel.app/",
     "splashImageUrl": "https://glazecorp.vercel.app/media/splash.png",
