@@ -577,10 +577,12 @@ export default function HomePage() {
                     : "text-red-400"
                 )}>
                   {minerState
-                    ? `Ξ${formatEth(
-                        (minerState.price * 80n) / 100n - minerState.initPrice / 2n,
-                        5
-                      )}`
+                    ? (() => {
+                        const pnl = (minerState.price * 80n) / 100n - minerState.initPrice / 2n;
+                        const sign = pnl >= 0n ? "+" : "-";
+                        const absolutePnl = pnl >= 0n ? pnl : -pnl;
+                        return `${sign}Ξ${formatEth(absolutePnl, 5)}`;
+                      })()
                     : "Ξ—"}
                 </div>
               </div>
