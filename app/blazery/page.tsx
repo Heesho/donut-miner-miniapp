@@ -444,7 +444,7 @@ export default function BlazeryPage() {
                 DONUT-ETH LP
               </div>
               <a
-                href="https://app.uniswap.org/explore/pools/base/0xc3b9bd6f7d4bfcc22696a7bc1cc83948a33d7fab"
+                href="https://app.uniswap.org/explore/pools/base/0xD1DbB2E56533C55C3A637D13C53aeEf65c5D5703"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-xs text-pink-400 hover:text-pink-300 font-semibold transition-colors"
