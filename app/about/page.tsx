@@ -140,8 +140,8 @@ export default function AboutPage() {
                 Emission Schedule
               </h2>
               <ul className="space-y-1 text-sm text-gray-300 list-disc list-inside">
-                <li>Starts at 10 DONUT / sec</li>
-                <li>Halving every 10 days</li>
+                <li>Starts at 4 DONUT / sec</li>
+                <li>Halving every 30 days</li>
                 <li>Tail emission: 0.01 DONUT / sec (forever)</li>
               </ul>
             </section>
