@@ -507,15 +507,16 @@ export default function HomePage() {
             ) : null}
           </div>
 
-          <div className="mt-2 grid grid-cols-2 gap-2">
-            <Card
-              className={cn(
-                "border-zinc-800 bg-black transition-shadow",
-                occupantDisplay.isYou &&
-                  "border-pink-500 shadow-[inset_0_0_24px_rgba(236,72,153,0.55)] animate-glow",
-              )}
-            >
-              <CardContent className="grid gap-1.5 p-2.5">
+          <Card
+            className={cn(
+              "mt-2 border-zinc-800 bg-black transition-shadow",
+              occupantDisplay.isYou &&
+                "border-pink-500 shadow-[inset_0_0_24px_rgba(236,72,153,0.55)] animate-glow",
+            )}
+          >
+            <CardContent className="grid grid-cols-3 gap-3 p-2.5">
+              {/* King Glazer Column */}
+              <div className="grid gap-1.5">
                 <div
                   className={cn(
                     "text-[10px] font-bold uppercase tracking-[0.08em]",
@@ -552,20 +553,39 @@ export default function HomePage() {
                     ) : null}
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
 
-            <Card className="border-zinc-800 bg-black">
-              <CardContent className="grid gap-1.5 p-2.5">
+              {/* Glazed Column */}
+              <div className="grid gap-1.5">
                 <div className="text-[10px] font-bold uppercase tracking-[0.08em] text-gray-400">
                   GLAZED
                 </div>
-                <div className="text-2xl font-semibold text-white">
+                <div className="text-lg font-semibold text-white">
                   {glazedDisplay}
                 </div>
-              </CardContent>
-            </Card>
-          </div>
+              </div>
+
+              {/* PNL Column */}
+              <div className="grid gap-1.5">
+                <div className="text-[10px] font-bold uppercase tracking-[0.08em] text-gray-400">
+                  PNL
+                </div>
+                <div className={cn(
+                  "text-lg font-semibold",
+                  minerState && ((minerState.price * 80n) / 100n - minerState.initPrice / 2n) >= 0n
+                    ? "text-green-400"
+                    : "text-red-400"
+                )}>
+                  {minerState
+                    ? `Ξ${formatEth(
+                        (minerState.price * 80n) / 100n - minerState.initPrice / 2n,
+                        5
+                      )}`
+                    : "Ξ—"}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
           <div className="relative mt-1 overflow-hidden bg-black">
             <div className="flex animate-scroll whitespace-nowrap py-1 text-sm font-bold text-pink-500">
