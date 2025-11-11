@@ -17,7 +17,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { CONTRACT_ADDRESSES, MULTICALL_ABI } from "@/lib/contracts";
-import { getEthPrice } from "@/lib/utils";
+import { cn, getEthPrice } from "@/lib/utils";
 import { NavBar } from "@/components/nav-bar";
 
 type MiniAppContext = {
@@ -351,8 +351,33 @@ export default function BlazeryPage() {
     return "BLAZE";
   }, [blazeResult, isConfirming, isWriting, auctionState, txStep]);
 
+  const hasInsufficientLP = auctionState && auctionState.paymentTokenBalance < auctionState.price;
+
+  // Calculate profit/loss for blazing
+  const blazeProfitLoss = useMemo(() => {
+    if (!auctionState) return null;
+
+    // LP token value in USD
+    const lpValueInEth = Number(formatEther(auctionState.price)) * Number(formatEther(auctionState.paymentTokenPrice));
+    const lpValueInUsd = lpValueInEth * ethUsdPrice;
+
+    // WETH value in USD (80% of what's accumulated, as per the contract logic)
+    const wethReceivedInEth = Number(formatEther(auctionState.wethAccumulated)) * 0.8;
+    const wethValueInUsd = wethReceivedInEth * ethUsdPrice;
+
+    const profitLoss = wethValueInUsd - lpValueInUsd;
+    const isProfitable = profitLoss > 0;
+
+    return {
+      profitLoss,
+      isProfitable,
+      lpValueInUsd,
+      wethValueInUsd,
+    };
+  }, [auctionState, ethUsdPrice]);
+
   const isBlazeDisabled =
-    !auctionState || isWriting || isConfirming || blazeResult !== null;
+    !auctionState || isWriting || isConfirming || blazeResult !== null || hasInsufficientLP;
 
   const userDisplayName =
     context?.user?.displayName ?? context?.user?.username ?? "Farcaster user";
@@ -467,6 +492,26 @@ export default function BlazeryPage() {
                 Get LP →
               </a>
             </div>
+
+            {/* Profit/Loss Warning Message */}
+            {blazeProfitLoss && (
+              <div className={cn(
+                "text-center text-sm font-semibold px-2 py-1.5 rounded",
+                blazeProfitLoss.isProfitable ? "text-green-400" : "text-red-400"
+              )}>
+                {blazeProfitLoss.isProfitable ? (
+                  <>
+                    💰 Profitable blaze! You'll receive ${blazeProfitLoss.wethValueInUsd.toFixed(2)} in WETH for ${blazeProfitLoss.lpValueInUsd.toFixed(2)} in LP
+                    ({blazeProfitLoss.profitLoss >= 0 ? '+' : ''}${blazeProfitLoss.profitLoss.toFixed(2)})
+                  </>
+                ) : (
+                  <>
+                    ⚠️ Unprofitable blaze! You'll receive ${blazeProfitLoss.wethValueInUsd.toFixed(2)} in WETH for ${blazeProfitLoss.lpValueInUsd.toFixed(2)} in LP
+                    (${blazeProfitLoss.profitLoss.toFixed(2)})
+                  </>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
