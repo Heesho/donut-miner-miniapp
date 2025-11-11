@@ -361,8 +361,8 @@ export default function BlazeryPage() {
     const lpValueInEth = Number(formatEther(auctionState.price)) * Number(formatEther(auctionState.paymentTokenPrice));
     const lpValueInUsd = lpValueInEth * ethUsdPrice;
 
-    // WETH value in USD (80% of what's accumulated, as per the contract logic)
-    const wethReceivedInEth = Number(formatEther(auctionState.wethAccumulated)) * 0.8;
+    // WETH value in USD
+    const wethReceivedInEth = Number(formatEther(auctionState.wethAccumulated));
     const wethValueInUsd = wethReceivedInEth * ethUsdPrice;
 
     const profitLoss = wethValueInUsd - lpValueInUsd;
@@ -456,7 +456,7 @@ export default function BlazeryPage() {
                   $
                   {auctionState
                     ? (
-                        Number(formatEther(auctionState.wethAccumulated)) * 3500
+                        Number(formatEther(auctionState.wethAccumulated)) * ethUsdPrice
                       ).toFixed(2)
                     : "0.00"}
                 </div>
