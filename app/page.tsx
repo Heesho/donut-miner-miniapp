@@ -18,7 +18,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { CONTRACT_ADDRESSES, MULTICALL_ABI } from "@/lib/contracts";
-import { cn } from "@/lib/utils";
+import { cn, getEthPrice } from "@/lib/utils";
 import { useAccountData } from "@/hooks/useAccountData";
 import { NavBar } from "@/components/nav-bar";
 import { AddToFarcasterDialog } from "@/components/add-to-farcaster-dialog";
@@ -40,6 +40,7 @@ type MinerState = {
   price: bigint;
   dps: bigint;
   nextDps: bigint;
+  donutPrice: bigint;
   miner: Address;
   uri: string;
   ethBalance: bigint;
@@ -98,6 +99,7 @@ export default function HomePage() {
   const autoConnectAttempted = useRef(false);
   const [context, setContext] = useState<MiniAppContext | null>(null);
   const [customMessage, setCustomMessage] = useState("");
+  const [ethUsdPrice, setEthUsdPrice] = useState<number>(3500);
   const [glazeResult, setGlazeResult] = useState<"success" | "failure" | null>(
     null,
   );
@@ -161,6 +163,19 @@ export default function HomePage() {
       }
     }, 1200);
     return () => clearTimeout(timeout);
+  }, []);
+
+  // Fetch ETH price on mount and every minute
+  useEffect(() => {
+    const fetchPrice = async () => {
+      const price = await getEthPrice();
+      setEthUsdPrice(price);
+    };
+
+    fetchPrice();
+    const interval = setInterval(fetchPrice, 60_000); // Update every minute
+
+    return () => clearInterval(interval);
   }, []);
 
   const { address, isConnected } = useAccount();
@@ -431,6 +446,29 @@ export default function HomePage() {
     ? `🍩${formatTokenAmount(minerState.glazed, DONUT_DECIMALS, 2)}`
     : "🍩—";
 
+  // Calculate USD values for donuts
+  const glazedUsdValue = minerState && minerState.donutPrice > 0n
+    ? (Number(formatEther(minerState.glazed)) * Number(formatEther(minerState.donutPrice)) * ethUsdPrice).toFixed(2)
+    : "0.00";
+
+  const glazeRateUsdValue = minerState && minerState.donutPrice > 0n
+    ? (Number(formatUnits(minerState.nextDps, DONUT_DECIMALS)) * Number(formatEther(minerState.donutPrice)) * ethUsdPrice).toFixed(4)
+    : "0.0000";
+
+  // Calculate PNL in USD
+  const pnlUsdValue = minerState
+    ? (() => {
+        const halfInitPrice = minerState.initPrice / 2n;
+        const pnl = minerState.price > minerState.initPrice
+          ? (minerState.price * 80n) / 100n - halfInitPrice
+          : minerState.price - halfInitPrice;
+        const pnlEth = Number(formatEther(pnl >= 0n ? pnl : -pnl));
+        const pnlUsd = pnlEth * ethUsdPrice;
+        const sign = pnl >= 0n ? "+" : "-";
+        return `${sign}$${pnlUsd.toFixed(2)}`;
+      })()
+    : "$0.00";
+
   const occupantInitialsSource = occupantDisplay.isUnknown
     ? occupantDisplay.addressLabel
     : occupantDisplay.primary || occupantDisplay.addressLabel;
@@ -514,85 +552,92 @@ export default function HomePage() {
                 "border-pink-500 shadow-[inset_0_0_24px_rgba(236,72,153,0.55)] animate-glow",
             )}
           >
-            <CardContent className="grid grid-cols-3 gap-3 p-2.5">
-              {/* King Glazer Column */}
-              <div className="grid gap-1.5">
-                <div
-                  className={cn(
-                    "text-[10px] font-bold uppercase tracking-[0.08em]",
-                    occupantDisplay.isYou
-                      ? "text-pink-400"
-                      : "text-gray-400",
-                  )}
-                >
-                  KING GLAZER
-                </div>
-                <div className="flex items-center gap-2">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage
-                      src={occupantDisplay.avatarUrl || undefined}
-                      alt={occupantDisplay.primary}
-                      className="object-cover"
-                    />
-                    <AvatarFallback className="bg-zinc-800 text-white text-xs uppercase">
-                      {minerState ? (
-                        occupantFallbackInitials
-                      ) : (
-                        <CircleUserRound className="h-4 w-4" />
-                      )}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="leading-tight text-left">
-                    <div className="flex items-center gap-1 text-sm text-white">
-                      <span>{occupantDisplay.primary}</span>
+            <CardContent className="flex items-center justify-between gap-3 p-2.5">
+              {/* King Glazer Section */}
+              <div className="flex items-center gap-2 min-w-0 flex-1">
+                <Avatar className="h-8 w-8 flex-shrink-0">
+                  <AvatarImage
+                    src={occupantDisplay.avatarUrl || undefined}
+                    alt={occupantDisplay.primary}
+                    className="object-cover"
+                  />
+                  <AvatarFallback className="bg-zinc-800 text-white text-xs uppercase">
+                    {minerState ? (
+                      occupantFallbackInitials
+                    ) : (
+                      <CircleUserRound className="h-4 w-4" />
+                    )}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="leading-tight text-left min-w-0 flex-1">
+                  <div
+                    className={cn(
+                      "text-[9px] font-bold uppercase tracking-[0.08em]",
+                      occupantDisplay.isYou
+                        ? "text-pink-400"
+                        : "text-gray-400",
+                    )}
+                  >
+                    KING GLAZER
+                  </div>
+                  <div className="flex items-center gap-1 text-sm text-white truncate">
+                    <span className="truncate">{occupantDisplay.primary}</span>
+                  </div>
+                  {occupantDisplay.secondary ? (
+                    <div className="text-[10px] text-gray-400 truncate">
+                      {occupantDisplay.secondary}
                     </div>
-                    {occupantDisplay.secondary ? (
-                      <div className="text-[11px] text-gray-400">
-                        {occupantDisplay.secondary}
-                      </div>
-                    ) : null}
+                  ) : null}
+                </div>
+              </div>
+
+              {/* Stats Section - Glazed and PNL stacked */}
+              <div className="flex flex-col gap-1.5 flex-shrink-0">
+                {/* Glazed Row */}
+                <div className="flex items-center gap-2">
+                  <div className="text-[9px] font-bold uppercase tracking-[0.08em] text-gray-400 w-12 text-right">
+                    GLAZED
+                  </div>
+                  <div className="text-sm font-semibold text-white">
+                    {glazedDisplay}
+                  </div>
+                  <div className="text-[10px] text-gray-400">
+                    ${glazedUsdValue}
                   </div>
                 </div>
-              </div>
 
-              {/* Glazed Column */}
-              <div className="grid gap-1.5 text-center">
-                <div className="text-[10px] font-bold uppercase tracking-[0.08em] text-gray-400">
-                  GLAZED
-                </div>
-                <div className="text-lg font-semibold text-white">
-                  {glazedDisplay}
-                </div>
-              </div>
-
-              {/* PNL Column */}
-              <div className="grid gap-1.5 text-right">
-                <div className="text-[10px] font-bold uppercase tracking-[0.08em] text-gray-400">
-                  PNL
-                </div>
-                <div className={cn(
-                  "text-lg font-semibold",
-                  minerState && (() => {
-                    const halfInitPrice = minerState.initPrice / 2n;
-                    const pnl = minerState.price > minerState.initPrice
-                      ? (minerState.price * 80n) / 100n - halfInitPrice
-                      : minerState.price - halfInitPrice;
-                    return pnl >= 0n;
-                  })()
-                    ? "text-green-400"
-                    : "text-red-400"
-                )}>
-                  {minerState
-                    ? (() => {
-                        const halfInitPrice = minerState.initPrice / 2n;
-                        const pnl = minerState.price > minerState.initPrice
-                          ? (minerState.price * 80n) / 100n - halfInitPrice
-                          : minerState.price - halfInitPrice;
-                        const sign = pnl >= 0n ? "+" : "-";
-                        const absolutePnl = pnl >= 0n ? pnl : -pnl;
-                        return `${sign}Ξ${formatEth(absolutePnl, 5)}`;
-                      })()
-                    : "Ξ—"}
+                {/* PNL Row */}
+                <div className="flex items-center gap-2">
+                  <div className="text-[9px] font-bold uppercase tracking-[0.08em] text-gray-400 w-12 text-right">
+                    PNL
+                  </div>
+                  <div className={cn(
+                    "text-sm font-semibold",
+                    minerState && (() => {
+                      const halfInitPrice = minerState.initPrice / 2n;
+                      const pnl = minerState.price > minerState.initPrice
+                        ? (minerState.price * 80n) / 100n - halfInitPrice
+                        : minerState.price - halfInitPrice;
+                      return pnl >= 0n;
+                    })()
+                      ? "text-green-400"
+                      : "text-red-400"
+                  )}>
+                    {minerState
+                      ? (() => {
+                          const halfInitPrice = minerState.initPrice / 2n;
+                          const pnl = minerState.price > minerState.initPrice
+                            ? (minerState.price * 80n) / 100n - halfInitPrice
+                            : minerState.price - halfInitPrice;
+                          const sign = pnl >= 0n ? "+" : "-";
+                          const absolutePnl = pnl >= 0n ? pnl : -pnl;
+                          return `${sign}Ξ${formatEth(absolutePnl, 5)}`;
+                        })()
+                      : "Ξ—"}
+                  </div>
+                  <div className="text-[10px] text-gray-400">
+                    {pnlUsdValue}
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -630,8 +675,10 @@ export default function HomePage() {
                     GLAZE RATE
                   </div>
                   <div className="text-2xl font-semibold text-white">
-                    🍩{glazeRateDisplay}
-                    <span className="text-xs text-gray-400"> /s</span>
+                    🍩{glazeRateDisplay}<span className="text-xs text-gray-400">/s</span>
+                  </div>
+                  <div className="text-xs text-gray-400 -mt-1">
+                    ${glazeRateUsdValue}/s
                   </div>
                 </CardContent>
               </Card>
@@ -648,7 +695,7 @@ export default function HomePage() {
                     $
                     {minerState
                       ? (
-                          Number(formatEther(minerState.price)) * 3500
+                          Number(formatEther(minerState.price)) * ethUsdPrice
                         ).toFixed(2)
                       : "0.00"}
                   </div>

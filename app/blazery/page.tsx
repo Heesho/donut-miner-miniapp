@@ -17,6 +17,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { CONTRACT_ADDRESSES, MULTICALL_ABI } from "@/lib/contracts";
+import { getEthPrice } from "@/lib/utils";
 import { NavBar } from "@/components/nav-bar";
 
 type MiniAppContext = {
@@ -68,6 +69,7 @@ export default function BlazeryPage() {
   const readyRef = useRef(false);
   const autoConnectAttempted = useRef(false);
   const [context, setContext] = useState<MiniAppContext | null>(null);
+  const [ethUsdPrice, setEthUsdPrice] = useState<number>(3500);
   const [blazeResult, setBlazeResult] = useState<"success" | "failure" | null>(
     null,
   );
@@ -116,6 +118,19 @@ export default function BlazeryPage() {
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  // Fetch ETH price on mount and every minute
+  useEffect(() => {
+    const fetchPrice = async () => {
+      const price = await getEthPrice();
+      setEthUsdPrice(price);
+    };
+
+    fetchPrice();
+    const interval = setInterval(fetchPrice, 60_000); // Update every minute
+
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -397,7 +412,7 @@ export default function BlazeryPage() {
                     ? (
                         Number(formatEther(auctionState.price)) *
                         Number(formatEther(auctionState.paymentTokenPrice)) *
-                        3500
+                        ethUsdPrice
                       ).toFixed(2)
                     : "0.00"}
                 </div>
