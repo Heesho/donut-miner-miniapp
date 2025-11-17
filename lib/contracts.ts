@@ -2,7 +2,7 @@ export const CONTRACT_ADDRESSES = {
   donut: "0xAE4a37d554C6D6F3E398546d8566B25052e0169C",
   miner: "0xF69614F4Ee8D4D3879dd53d5A039eB3114C794F6",
   multicall: "0x3ec144554b484C6798A683E34c8e8E222293f323",
-  provider: "0x3539bccca86de11575eb70997b136f9b30d21751",
+  provider: "0xba366c82815983ff130c23ced78bd95e1f2c18ea",
 } as const;
 
 export const MULTICALL_ABI = [
