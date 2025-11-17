@@ -5,6 +5,7 @@ import { sdk } from "@farcaster/miniapp-sdk";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { NavBar } from "@/components/nav-bar";
 import { AddToFarcasterButton } from "@/components/add-to-farcaster-button";
+import { DuneDashboardButton } from "@/components/dune-dashboard-button";
 
 type MiniAppContext = {
   user?: {
@@ -100,10 +101,14 @@ export default function AboutPage() {
           </div>
 
           <div className="space-y-6 px-2 overflow-y-auto scrollbar-hide flex-1">
-            <AddToFarcasterButton
-              className="w-full"
-              variant="default"
-            />
+            <div className="grid grid-cols-2 gap-2">
+              <AddToFarcasterButton
+                variant="default"
+              />
+              <DuneDashboardButton
+                variant="default"
+              />
+            </div>
 
             <section>
               <h2 className="text-lg font-bold text-pink-400 mb-2">
