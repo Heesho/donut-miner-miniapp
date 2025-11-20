@@ -179,7 +179,7 @@ export default function BlazeryPage() {
       args: [address ?? zeroAddress],
       chainId: base.id,
       query: {
-        refetchInterval: 1_000,
+        refetchInterval: 3_000,
       },
     });
 

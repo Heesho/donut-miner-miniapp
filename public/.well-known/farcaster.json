@@ -26,6 +26,9 @@
       "gaming",
       "base",
       "rewards"
+    ],
+    "actions": [
+      "viewProfile"
     ]
   }
 }

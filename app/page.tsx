@@ -207,7 +207,7 @@ export default function HomePage() {
     args: [address ?? zeroAddress],
     chainId: base.id,
     query: {
-      refetchInterval: 1_000,
+      refetchInterval: 3_000,
     },
   });
 
@@ -346,6 +346,32 @@ export default function HomePage() {
     writeContract,
   ]);
 
+  // Local state for smooth glazed counter interpolation
+  const [interpolatedGlazed, setInterpolatedGlazed] = useState<bigint | null>(null);
+
+  // Update interpolated glazed amount smoothly between fetches
+  useEffect(() => {
+    if (!minerState) {
+      setInterpolatedGlazed(null);
+      return;
+    }
+
+    // Start with the fetched value
+    setInterpolatedGlazed(minerState.glazed);
+
+    // Update every second with interpolated value
+    const interval = setInterval(() => {
+      if (minerState.nextDps > 0n) {
+        setInterpolatedGlazed((prev) => {
+          if (!prev) return minerState.glazed;
+          return prev + minerState.nextDps;
+        });
+      }
+    }, 1_000);
+
+    return () => clearInterval(interval);
+  }, [minerState]);
+
   const occupantDisplay = useMemo(() => {
     if (!minerState) {
       return {
@@ -442,13 +468,13 @@ export default function HomePage() {
   const glazePriceDisplay = minerState
     ? `Ξ${formatEth(minerState.price, minerState.price === 0n ? 0 : 5)}`
     : "Ξ—";
-  const glazedDisplay = minerState
-    ? `🍩${formatTokenAmount(minerState.glazed, DONUT_DECIMALS, 2)}`
+  const glazedDisplay = minerState && interpolatedGlazed !== null
+    ? `🍩${formatTokenAmount(interpolatedGlazed, DONUT_DECIMALS, 2)}`
     : "🍩—";
 
   // Calculate USD values for donuts
-  const glazedUsdValue = minerState && minerState.donutPrice > 0n
-    ? (Number(formatEther(minerState.glazed)) * Number(formatEther(minerState.donutPrice)) * ethUsdPrice).toFixed(2)
+  const glazedUsdValue = minerState && minerState.donutPrice > 0n && interpolatedGlazed !== null
+    ? (Number(formatEther(interpolatedGlazed)) * Number(formatEther(minerState.donutPrice)) * ethUsdPrice).toFixed(2)
     : "0.00";
 
   const glazeRateUsdValue = minerState && minerState.donutPrice > 0n
@@ -498,6 +524,22 @@ export default function HomePage() {
 
   const isGlazeDisabled =
     !minerState || isWriting || isConfirming || glazeResult !== null;
+
+  const handleViewKingGlazerProfile = useCallback(() => {
+    const fid = neynarUser?.user?.fid;
+    const username = neynarUser?.user?.username;
+    console.log("King Glazer clicked, FID:", fid, "Username:", username);
+
+    if (username) {
+      // Open Farcaster profile URL using username (cleaner URL)
+      window.open(`https://warpcast.com/${username}`, "_blank", "noopener,noreferrer");
+    } else if (fid) {
+      // Fallback to FID-based URL if username not available
+      window.open(`https://warpcast.com/~/profiles/${fid}`, "_blank", "noopener,noreferrer");
+    } else {
+      console.log("No FID or username available for King Glazer");
+    }
+  }, [neynarUser?.user?.fid, neynarUser?.user?.username]);
 
   const userDisplayName =
     context?.user?.displayName ?? context?.user?.username ?? "Farcaster user";
@@ -554,7 +596,13 @@ export default function HomePage() {
           >
             <CardContent className="flex items-center justify-between gap-3 p-2.5">
               {/* King Glazer Section */}
-              <div className="flex items-center gap-2 min-w-0 flex-1">
+              <div
+                className={cn(
+                  "flex items-center gap-2 min-w-0 flex-1",
+                  neynarUser?.user?.fid && "cursor-pointer hover:opacity-80 transition-opacity"
+                )}
+                onClick={neynarUser?.user?.fid ? handleViewKingGlazerProfile : undefined}
+              >
                 <Avatar className="h-8 w-8 flex-shrink-0">
                   <AvatarImage
                     src={occupantDisplay.avatarUrl || undefined}
