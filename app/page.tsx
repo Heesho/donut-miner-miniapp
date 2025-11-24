@@ -639,7 +639,7 @@ export default function HomePage() {
                 "border-pink-500 shadow-[inset_0_0_24px_rgba(236,72,153,0.55)] animate-glow",
             )}
           >
-            <CardContent className="p-0 px-2.5 pt-1.5 pb-2 flex items-center justify-between gap-3">
+            <div className="px-2.5 py-2 flex items-center justify-between gap-3 min-h-[60px]">
               {/* Left Section: Title + Profile */}
               <div className="flex flex-col gap-1 min-w-0 flex-1">
                 {/* King Glazer Title */}
@@ -748,7 +748,7 @@ export default function HomePage() {
                   </div>
                 </div>
               </div>
-            </CardContent>
+            </div>
           </Card>
 
           <div className="relative mt-1 overflow-hidden bg-black">
