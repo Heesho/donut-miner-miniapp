@@ -639,7 +639,7 @@ export default function HomePage() {
                 "border-pink-500 shadow-[inset_0_0_24px_rgba(236,72,153,0.55)] animate-glow",
             )}
           >
-            <div className="px-2.5 py-2 flex items-center justify-between gap-3 min-h-[60px]">
+            <div className="px-2.5 py-2 flex items-center justify-between gap-3">
               {/* Left Section: Title + Profile */}
               <div className="flex flex-col gap-1 min-w-0 flex-1">
                 {/* King Glazer Title */}
