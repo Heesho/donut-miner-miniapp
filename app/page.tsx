@@ -496,18 +496,21 @@ export default function HomePage() {
     ? `🍩${formatTokenAmount(interpolatedGlazed, DONUT_DECIMALS, 2)}`
     : "🍩—";
 
-  // Format glaze elapsed time (HH:MM:SS or MM:SS for < 1 hour)
+  // Format glaze elapsed time with units
   const formatGlazeTime = (seconds: number): string => {
-    if (seconds < 0) return "0:00";
+    if (seconds < 0) return "0s";
 
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
 
     if (hours > 0) {
-      return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+      return `${hours}h ${minutes}m ${secs}s`;
     }
-    return `${minutes}:${secs.toString().padStart(2, '0')}`;
+    if (minutes > 0) {
+      return `${minutes}m ${secs}s`;
+    }
+    return `${secs}s`;
   };
 
   const glazeTimeDisplay = minerState
@@ -631,21 +634,35 @@ export default function HomePage() {
 
           <Card
             className={cn(
-              "mt-2 border-zinc-800 bg-black transition-shadow",
+              "mt-2 border-zinc-800 bg-gradient-to-br from-zinc-950 to-black transition-shadow rounded-xl overflow-hidden",
               occupantDisplay.isYou &&
                 "border-pink-500 shadow-[inset_0_0_24px_rgba(236,72,153,0.55)] animate-glow",
             )}
           >
-            <CardContent className="flex items-center justify-between gap-3 p-2.5">
-              {/* King Glazer Section */}
-              <div
-                className={cn(
-                  "flex items-center gap-2 min-w-0 flex-1",
-                  neynarUser?.user?.fid && "cursor-pointer hover:opacity-80 transition-opacity"
-                )}
-                onClick={neynarUser?.user?.fid ? handleViewKingGlazerProfile : undefined}
-              >
-                <Avatar className="h-8 w-8 flex-shrink-0">
+            <CardContent className="p-3.5 flex items-center justify-between gap-4">
+              {/* Left Section: Title + Profile */}
+              <div className="flex flex-col gap-2 min-w-0 flex-1">
+                {/* King Glazer Title */}
+                <div
+                  className={cn(
+                    "text-xs font-bold uppercase tracking-[0.1em]",
+                    occupantDisplay.isYou
+                      ? "text-pink-400"
+                      : "text-gray-400",
+                  )}
+                >
+                  KING GLAZER
+                </div>
+
+                {/* Profile Section */}
+                <div
+                  className={cn(
+                    "flex items-center gap-3 min-w-0",
+                    neynarUser?.user?.fid && "cursor-pointer hover:opacity-80 transition-opacity"
+                  )}
+                  onClick={neynarUser?.user?.fid ? handleViewKingGlazerProfile : undefined}
+                >
+                <Avatar className="h-10 w-10 flex-shrink-0 ring-2 ring-zinc-800">
                   <AvatarImage
                     src={occupantDisplay.avatarUrl || undefined}
                     alt={occupantDisplay.primary}
@@ -660,29 +677,20 @@ export default function HomePage() {
                   </AvatarFallback>
                 </Avatar>
                 <div className="leading-tight text-left min-w-0 flex-1">
-                  <div
-                    className={cn(
-                      "text-[9px] font-bold uppercase tracking-[0.08em]",
-                      occupantDisplay.isYou
-                        ? "text-pink-400"
-                        : "text-gray-400",
-                    )}
-                  >
-                    KING GLAZER
-                  </div>
-                  <div className="flex items-center gap-1 text-sm text-white truncate">
+                  <div className="flex items-center gap-1 text-base font-semibold text-white truncate">
                     <span className="truncate">{occupantDisplay.primary}</span>
                   </div>
                   {occupantDisplay.secondary ? (
-                    <div className="text-[10px] text-gray-400 truncate">
+                    <div className="text-[11px] text-gray-400 truncate mt-0.5">
                       {occupantDisplay.secondary}
                     </div>
                   ) : null}
                 </div>
+                </div>
               </div>
 
               {/* Stats Section - Glazed and PNL stacked */}
-              <div className="flex flex-col gap-1.5 flex-shrink-0">
+              <div className="flex flex-col gap-2 flex-shrink-0">
                 {/* Time Row */}
                 <div className="flex items-center gap-2">
                   <div className="text-[9px] font-bold uppercase tracking-[0.08em] text-gray-400 w-12 text-right">
