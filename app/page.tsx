@@ -349,6 +349,9 @@ export default function HomePage() {
   // Local state for smooth glazed counter interpolation
   const [interpolatedGlazed, setInterpolatedGlazed] = useState<bigint | null>(null);
 
+  // Local state for glaze time tracking
+  const [glazeElapsedSeconds, setGlazeElapsedSeconds] = useState<number>(0);
+
   // Update interpolated glazed amount smoothly between fetches
   useEffect(() => {
     if (!minerState) {
@@ -367,6 +370,27 @@ export default function HomePage() {
           return prev + minerState.nextDps;
         });
       }
+    }, 1_000);
+
+    return () => clearInterval(interval);
+  }, [minerState]);
+
+  // Update glaze elapsed time every second
+  useEffect(() => {
+    if (!minerState) {
+      setGlazeElapsedSeconds(0);
+      return;
+    }
+
+    // Calculate initial elapsed time
+    const startTimeSeconds = Number(minerState.startTime);
+    const initialElapsed = Math.floor(Date.now() / 1000) - startTimeSeconds;
+    setGlazeElapsedSeconds(initialElapsed);
+
+    // Update every second
+    const interval = setInterval(() => {
+      const currentElapsed = Math.floor(Date.now() / 1000) - startTimeSeconds;
+      setGlazeElapsedSeconds(currentElapsed);
     }, 1_000);
 
     return () => clearInterval(interval);
@@ -471,6 +495,24 @@ export default function HomePage() {
   const glazedDisplay = minerState && interpolatedGlazed !== null
     ? `🍩${formatTokenAmount(interpolatedGlazed, DONUT_DECIMALS, 2)}`
     : "🍩—";
+
+  // Format glaze elapsed time (HH:MM:SS or MM:SS for < 1 hour)
+  const formatGlazeTime = (seconds: number): string => {
+    if (seconds < 0) return "0:00";
+
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+
+    if (hours > 0) {
+      return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+    return `${minutes}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const glazeTimeDisplay = minerState
+    ? formatGlazeTime(glazeElapsedSeconds)
+    : "—";
 
   // Calculate USD values for donuts
   const glazedUsdValue = minerState && minerState.donutPrice > 0n && interpolatedGlazed !== null
@@ -641,6 +683,16 @@ export default function HomePage() {
 
               {/* Stats Section - Glazed and PNL stacked */}
               <div className="flex flex-col gap-1.5 flex-shrink-0">
+                {/* Time Row */}
+                <div className="flex items-center gap-2">
+                  <div className="text-[9px] font-bold uppercase tracking-[0.08em] text-gray-400 w-12 text-right">
+                    TIME
+                  </div>
+                  <div className="text-sm font-semibold text-white">
+                    {glazeTimeDisplay}
+                  </div>
+                </div>
+
                 {/* Glazed Row */}
                 <div className="flex items-center gap-2">
                   <div className="text-[9px] font-bold uppercase tracking-[0.08em] text-gray-400 w-12 text-right">
