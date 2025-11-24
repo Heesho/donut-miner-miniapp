@@ -639,13 +639,13 @@ export default function HomePage() {
                 "border-pink-500 shadow-[inset_0_0_24px_rgba(236,72,153,0.55)] animate-glow",
             )}
           >
-            <CardContent className="p-3.5 flex items-center justify-between gap-4">
+            <CardContent className="p-0 px-2.5 pt-1.5 pb-2 flex items-center justify-between gap-3">
               {/* Left Section: Title + Profile */}
-              <div className="flex flex-col gap-2 min-w-0 flex-1">
+              <div className="flex flex-col gap-1 min-w-0 flex-1">
                 {/* King Glazer Title */}
                 <div
                   className={cn(
-                    "text-xs font-bold uppercase tracking-[0.1em]",
+                    "text-[9px] font-bold uppercase tracking-[0.1em]",
                     occupantDisplay.isYou
                       ? "text-pink-400"
                       : "text-gray-400",
@@ -657,12 +657,12 @@ export default function HomePage() {
                 {/* Profile Section */}
                 <div
                   className={cn(
-                    "flex items-center gap-3 min-w-0",
+                    "flex items-center gap-2 min-w-0",
                     neynarUser?.user?.fid && "cursor-pointer hover:opacity-80 transition-opacity"
                   )}
                   onClick={neynarUser?.user?.fid ? handleViewKingGlazerProfile : undefined}
                 >
-                <Avatar className="h-10 w-10 flex-shrink-0 ring-2 ring-zinc-800">
+                <Avatar className="h-8 w-8 flex-shrink-0 ring-2 ring-zinc-800">
                   <AvatarImage
                     src={occupantDisplay.avatarUrl || undefined}
                     alt={occupantDisplay.primary}
@@ -677,11 +677,11 @@ export default function HomePage() {
                   </AvatarFallback>
                 </Avatar>
                 <div className="leading-tight text-left min-w-0 flex-1">
-                  <div className="flex items-center gap-1 text-base font-semibold text-white truncate">
+                  <div className="flex items-center gap-1 text-xs font-semibold text-white truncate">
                     <span className="truncate">{occupantDisplay.primary}</span>
                   </div>
                   {occupantDisplay.secondary ? (
-                    <div className="text-[11px] text-gray-400 truncate mt-0.5">
+                    <div className="text-[9px] text-gray-400 truncate">
                       {occupantDisplay.secondary}
                     </div>
                   ) : null}
@@ -690,37 +690,37 @@ export default function HomePage() {
               </div>
 
               {/* Stats Section - Glazed and PNL stacked */}
-              <div className="flex flex-col gap-2 flex-shrink-0">
+              <div className="flex flex-col gap-0.5 flex-shrink-0">
                 {/* Time Row */}
-                <div className="flex items-center gap-2">
-                  <div className="text-[9px] font-bold uppercase tracking-[0.08em] text-gray-400 w-12 text-right">
+                <div className="flex items-center gap-1.5">
+                  <div className="text-[8px] font-bold uppercase tracking-[0.08em] text-gray-400 w-10 text-right">
                     TIME
                   </div>
-                  <div className="text-sm font-semibold text-white">
+                  <div className="text-xs font-semibold text-white">
                     {glazeTimeDisplay}
                   </div>
                 </div>
 
                 {/* Glazed Row */}
-                <div className="flex items-center gap-2">
-                  <div className="text-[9px] font-bold uppercase tracking-[0.08em] text-gray-400 w-12 text-right">
+                <div className="flex items-center gap-1.5">
+                  <div className="text-[8px] font-bold uppercase tracking-[0.08em] text-gray-400 w-10 text-right">
                     GLAZED
                   </div>
-                  <div className="text-sm font-semibold text-white">
+                  <div className="text-xs font-semibold text-white">
                     {glazedDisplay}
                   </div>
-                  <div className="text-[10px] text-gray-400">
+                  <div className="text-[9px] text-gray-400">
                     ${glazedUsdValue}
                   </div>
                 </div>
 
                 {/* PNL Row */}
-                <div className="flex items-center gap-2">
-                  <div className="text-[9px] font-bold uppercase tracking-[0.08em] text-gray-400 w-12 text-right">
+                <div className="flex items-center gap-1.5">
+                  <div className="text-[8px] font-bold uppercase tracking-[0.08em] text-gray-400 w-10 text-right">
                     PNL
                   </div>
                   <div className={cn(
-                    "text-sm font-semibold",
+                    "text-xs font-semibold",
                     minerState && (() => {
                       const halfInitPrice = minerState.initPrice / 2n;
                       const pnl = minerState.price > minerState.initPrice
@@ -743,7 +743,7 @@ export default function HomePage() {
                         })()
                       : "Ξ—"}
                   </div>
-                  <div className="text-[10px] text-gray-400">
+                  <div className="text-[9px] text-gray-400">
                     {pnlUsdValue}
                   </div>
                 </div>
