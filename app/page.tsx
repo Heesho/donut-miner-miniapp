@@ -98,7 +98,7 @@ export default function HomePage() {
   const readyRef = useRef(false);
   const autoConnectAttempted = useRef(false);
   const [context, setContext] = useState<MiniAppContext | null>(null);
-  const [customMessage, setCustomMessage] = useState("We Glaze The World");
+  const [customMessage, setCustomMessage] = useState("");
   const [ethUsdPrice, setEthUsdPrice] = useState<number>(3500);
   const [glazeResult, setGlazeResult] = useState<"success" | "failure" | null>(
     null,
@@ -324,7 +324,7 @@ export default function HomePage() {
           epochId,
           deadline,
           maxPrice,
-          customMessage.trim(),
+          customMessage.trim() || "We Glaze The World",
         ],
         value: price,
         chainId: base.id,
