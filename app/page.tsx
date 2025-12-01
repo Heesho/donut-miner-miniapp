@@ -529,10 +529,7 @@ export default function HomePage() {
   // Calculate PNL in USD
   const pnlUsdValue = minerState
     ? (() => {
-        const halfInitPrice = minerState.initPrice / 2n;
-        const pnl = minerState.price > minerState.initPrice
-          ? (minerState.price * 80n) / 100n - halfInitPrice
-          : minerState.price - halfInitPrice;
+        const pnl = (minerState.price * 80n) / 100n - minerState.initPrice / 2n;
         const pnlEth = Number(formatEther(pnl >= 0n ? pnl : -pnl));
         const pnlUsd = pnlEth * ethUsdPrice;
         const sign = pnl >= 0n ? "+" : "-";
@@ -722,10 +719,7 @@ export default function HomePage() {
                   <div className={cn(
                     "text-xs font-semibold",
                     minerState && (() => {
-                      const halfInitPrice = minerState.initPrice / 2n;
-                      const pnl = minerState.price > minerState.initPrice
-                        ? (minerState.price * 80n) / 100n - halfInitPrice
-                        : minerState.price - halfInitPrice;
+                      const pnl = (minerState.price * 80n) / 100n - minerState.initPrice / 2n;
                       return pnl >= 0n;
                     })()
                       ? "text-green-400"
@@ -733,10 +727,7 @@ export default function HomePage() {
                   )}>
                     {minerState
                       ? (() => {
-                          const halfInitPrice = minerState.initPrice / 2n;
-                          const pnl = minerState.price > minerState.initPrice
-                            ? (minerState.price * 80n) / 100n - halfInitPrice
-                            : minerState.price - halfInitPrice;
+                          const pnl = (minerState.price * 80n) / 100n - minerState.initPrice / 2n;
                           const sign = pnl >= 0n ? "+" : "-";
                           const absolutePnl = pnl >= 0n ? pnl : -pnl;
                           return `${sign}Ξ${formatEth(absolutePnl, 5)}`;
