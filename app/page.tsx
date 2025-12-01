@@ -704,10 +704,10 @@ export default function HomePage() {
                     GLAZED
                   </div>
                   <div className="text-xs font-semibold text-white">
-                    {glazedDisplay}
+                    +{glazedDisplay}
                   </div>
                   <div className="text-[9px] text-gray-400">
-                    ${glazedUsdValue}
+                    +${glazedUsdValue}
                   </div>
                 </div>
 
@@ -716,15 +716,7 @@ export default function HomePage() {
                   <div className="text-[8px] font-bold uppercase tracking-[0.08em] text-gray-400 w-10 text-right">
                     PNL
                   </div>
-                  <div className={cn(
-                    "text-xs font-semibold",
-                    minerState && (() => {
-                      const pnl = (minerState.price * 80n) / 100n - minerState.initPrice / 2n;
-                      return pnl >= 0n;
-                    })()
-                      ? "text-green-400"
-                      : "text-red-400"
-                  )}>
+                  <div className="text-xs font-semibold text-white">
                     {minerState
                       ? (() => {
                           const pnl = (minerState.price * 80n) / 100n - minerState.initPrice / 2n;
@@ -736,6 +728,37 @@ export default function HomePage() {
                   </div>
                   <div className="text-[9px] text-gray-400">
                     {pnlUsdValue}
+                  </div>
+                </div>
+
+                {/* Total Row */}
+                <div className="flex items-center gap-1.5">
+                  <div className="text-[8px] font-bold uppercase tracking-[0.08em] text-gray-400 w-10 text-right">
+                    TOTAL
+                  </div>
+                  <div className={cn(
+                    "text-xs font-semibold",
+                    minerState && (() => {
+                      const pnl = (minerState.price * 80n) / 100n - minerState.initPrice / 2n;
+                      const pnlEth = Number(formatEther(pnl >= 0n ? pnl : -pnl));
+                      const pnlUsd = pnlEth * ethUsdPrice * (pnl >= 0n ? 1 : -1);
+                      const glazedUsd = Number(glazedUsdValue);
+                      return (glazedUsd + pnlUsd) >= 0;
+                    })()
+                      ? "text-green-400"
+                      : "text-red-400"
+                  )}>
+                    {minerState
+                      ? (() => {
+                          const pnl = (minerState.price * 80n) / 100n - minerState.initPrice / 2n;
+                          const pnlEth = Number(formatEther(pnl >= 0n ? pnl : -pnl));
+                          const pnlUsd = pnlEth * ethUsdPrice * (pnl >= 0n ? 1 : -1);
+                          const glazedUsd = Number(glazedUsdValue);
+                          const total = glazedUsd + pnlUsd;
+                          const sign = total >= 0 ? "+" : "-";
+                          return `${sign}$${Math.abs(total).toFixed(2)}`;
+                        })()
+                      : "$—"}
                   </div>
                 </div>
               </div>
