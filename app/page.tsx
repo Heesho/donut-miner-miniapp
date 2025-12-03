@@ -782,7 +782,7 @@ export default function HomePage() {
           <div className="mt-1 -mx-2 w-[calc(100%+1rem)] overflow-hidden relative">
             <video
               ref={videoRef}
-              className="aspect-[16/9] w-full object-cover"
+              className="aspect-[16/9] w-full object-cover object-bottom"
               autoPlay
               loop
               muted={isMuted}
