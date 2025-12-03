@@ -633,12 +633,12 @@ export default function HomePage() {
 
           <Card
             className={cn(
-              "mt-2 border-zinc-800 bg-gradient-to-br from-zinc-950 to-black transition-shadow rounded-xl",
+              "mt-1 border-zinc-800 bg-gradient-to-br from-zinc-950 to-black transition-shadow rounded-xl",
               occupantDisplay.isYou &&
                 "border-pink-500 shadow-[inset_0_0_24px_rgba(236,72,153,0.55)] animate-glow",
             )}
           >
-            <div className="px-2.5 py-2.5 flex items-center justify-between gap-3">
+            <div className="px-2 py-1.5 flex items-center justify-between gap-2">
               {/* Left Section: Title + Profile */}
               <div className="flex flex-col gap-1 min-w-0 flex-1">
                 {/* King Glazer Title */}
@@ -661,7 +661,7 @@ export default function HomePage() {
                   )}
                   onClick={neynarUser?.user?.fid ? handleViewKingGlazerProfile : undefined}
                 >
-                <Avatar className="h-8 w-8 flex-shrink-0 ring-2 ring-zinc-800">
+                <Avatar className="h-7 w-7 flex-shrink-0 ring-2 ring-zinc-800">
                   <AvatarImage
                     src={occupantDisplay.avatarUrl || undefined}
                     alt={occupantDisplay.primary}
@@ -676,7 +676,7 @@ export default function HomePage() {
                   </AvatarFallback>
                 </Avatar>
                 <div className="leading-tight text-left min-w-0 flex-1">
-                  <div className="flex items-center gap-1 text-xs font-semibold text-white truncate">
+                  <div className="flex items-center gap-1 text-[11px] font-semibold text-white truncate">
                     <span className="truncate">{occupantDisplay.primary}</span>
                   </div>
                   {occupantDisplay.secondary ? (
@@ -691,34 +691,34 @@ export default function HomePage() {
               {/* Stats Section - Glazed and PNL stacked */}
               <div className="flex flex-col gap-0.5 flex-shrink-0">
                 {/* Time Row */}
-                <div className="flex items-center gap-1.5">
-                  <div className="text-[8px] font-bold uppercase tracking-[0.08em] text-gray-400 w-10 text-right">
+                <div className="flex items-center gap-1">
+                  <div className="text-[7px] font-bold uppercase tracking-[0.08em] text-gray-400 w-9 text-right">
                     TIME
                   </div>
-                  <div className="text-xs font-semibold text-white">
+                  <div className="text-[10px] font-semibold text-white">
                     {glazeTimeDisplay}
                   </div>
                 </div>
 
                 {/* Glazed Row */}
-                <div className="flex items-center gap-1.5">
-                  <div className="text-[8px] font-bold uppercase tracking-[0.08em] text-gray-400 w-10 text-right">
+                <div className="flex items-center gap-1">
+                  <div className="text-[7px] font-bold uppercase tracking-[0.08em] text-gray-400 w-9 text-right">
                     GLAZED
                   </div>
-                  <div className="text-xs font-semibold text-white">
+                  <div className="text-[10px] font-semibold text-white">
                     +{glazedDisplay}
                   </div>
-                  <div className="text-[9px] text-gray-400">
+                  <div className="text-[8px] text-gray-400">
                     +${glazedUsdValue}
                   </div>
                 </div>
 
                 {/* PNL Row */}
-                <div className="flex items-center gap-1.5">
-                  <div className="text-[8px] font-bold uppercase tracking-[0.08em] text-gray-400 w-10 text-right">
+                <div className="flex items-center gap-1">
+                  <div className="text-[7px] font-bold uppercase tracking-[0.08em] text-gray-400 w-9 text-right">
                     PNL
                   </div>
-                  <div className="text-xs font-semibold text-white">
+                  <div className="text-[10px] font-semibold text-white">
                     {minerState
                       ? (() => {
                           const pnl = (minerState.price * 80n) / 100n - minerState.initPrice / 2n;
@@ -728,18 +728,18 @@ export default function HomePage() {
                         })()
                       : "Ξ—"}
                   </div>
-                  <div className="text-[9px] text-gray-400">
+                  <div className="text-[8px] text-gray-400">
                     {pnlUsdValue}
                   </div>
                 </div>
 
                 {/* Total Row */}
-                <div className="flex items-center gap-1.5">
-                  <div className="text-[8px] font-bold uppercase tracking-[0.08em] text-gray-400 w-10 text-right">
+                <div className="flex items-center gap-1">
+                  <div className="text-[7px] font-bold uppercase tracking-[0.08em] text-gray-400 w-9 text-right">
                     TOTAL
                   </div>
                   <div className={cn(
-                    "text-xs font-semibold",
+                    "text-[10px] font-semibold",
                     minerState && (() => {
                       const pnl = (minerState.price * 80n) / 100n - minerState.initPrice / 2n;
                       const pnlEth = Number(formatEther(pnl >= 0n ? pnl : -pnl));
@@ -782,7 +782,7 @@ export default function HomePage() {
           <div className="mt-1 -mx-2 w-[calc(100%+1rem)] overflow-hidden relative">
             <video
               ref={videoRef}
-              className="aspect-[16/9] w-full object-cover object-bottom"
+              className="w-full object-contain"
               autoPlay
               loop
               muted={isMuted}
@@ -803,31 +803,33 @@ export default function HomePage() {
             </button>
           </div>
 
-          <div className="mt-2 flex flex-col gap-2 pb-2">
-            <div className="grid grid-cols-2 gap-2">
+          <div className="mt-1 flex flex-col gap-1.5 pb-1">
+            <div className="grid grid-cols-2 gap-1.5">
               <Card className="border-zinc-800 bg-black">
-                <CardContent className="grid gap-1.5 p-2.5">
-                  <div className="text-[10px] font-bold uppercase tracking-[0.08em] text-gray-400">
+                <CardContent className="grid gap-0.5 p-2">
+                  <div className="text-[9px] font-bold uppercase tracking-[0.08em] text-gray-400">
                     GLAZE RATE
                   </div>
-                  <div className="text-2xl font-semibold text-white">
-                    🍩{glazeRateDisplay}<span className="text-xs text-gray-400">/s</span>
+                  <div className="flex items-baseline">
+                    <span className="text-base leading-none">🍩</span>
+                    <span className="text-xl font-semibold text-white">{glazeRateDisplay}</span>
+                    <span className="text-[10px] text-gray-400">/s</span>
                   </div>
-                  <div className="text-xs text-gray-400 -mt-1">
+                  <div className="text-[10px] text-gray-400">
                     ${glazeRateUsdValue}/s
                   </div>
                 </CardContent>
               </Card>
 
               <Card className="border-zinc-800 bg-black">
-                <CardContent className="grid gap-1.5 p-2.5">
-                  <div className="text-[10px] font-bold uppercase tracking-[0.08em] text-gray-400">
+                <CardContent className="grid gap-0.5 p-2">
+                  <div className="text-[9px] font-bold uppercase tracking-[0.08em] text-gray-400">
                     GLAZE PRICE
                   </div>
-                  <div className="text-2xl font-semibold text-pink-400">
-                    {glazePriceDisplay}
+                  <div className="flex items-baseline">
+                    <span className="text-xl font-semibold text-pink-400">{glazePriceDisplay}</span>
                   </div>
-                  <div className="text-xs text-gray-400 -mt-1">
+                  <div className="text-[10px] text-gray-400">
                     $
                     {minerState
                       ? (
@@ -845,12 +847,12 @@ export default function HomePage() {
               onChange={(e) => setCustomMessage(e.target.value)}
               placeholder="Add a message (optional)"
               maxLength={100}
-              className="w-full rounded-lg border border-zinc-800 bg-black px-3 py-2 text-sm font-mono text-white placeholder-gray-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-40"
+              className="w-full rounded-lg border border-zinc-800 bg-black px-2.5 py-1.5 text-xs font-mono text-white placeholder-gray-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-40"
               disabled={isGlazeDisabled}
             />
 
             <Button
-              className="w-full rounded-2xl bg-pink-500 py-3 text-base font-bold text-black shadow-lg transition-colors hover:bg-pink-400 disabled:cursor-not-allowed disabled:bg-pink-500/40"
+              className="w-full rounded-2xl bg-pink-500 py-2 text-sm font-bold text-black shadow-lg transition-colors hover:bg-pink-400 disabled:cursor-not-allowed disabled:bg-pink-500/40"
               onClick={handleGlaze}
               disabled={isGlazeDisabled}
             >
