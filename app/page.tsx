@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { sdk } from "@farcaster/miniapp-sdk";
-import { CircleUserRound } from "lucide-react";
+import { CircleUserRound, Volume2, VolumeOff } from "lucide-react";
 import {
   useAccount,
   useConnect,
@@ -103,6 +103,8 @@ export default function HomePage() {
   const [glazeResult, setGlazeResult] = useState<"success" | "failure" | null>(
     null,
   );
+  const [isMuted, setIsMuted] = useState(true);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const glazeResultTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
@@ -777,16 +779,28 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="mt-1 -mx-2 w-[calc(100%+1rem)] overflow-hidden">
+          <div className="mt-1 -mx-2 w-[calc(100%+1rem)] overflow-hidden relative">
             <video
+              ref={videoRef}
               className="aspect-[16/9] w-full object-cover"
               autoPlay
               loop
-              muted
+              muted={isMuted}
               playsInline
               preload="auto"
               src="/media/donut-loop.mp4"
             />
+            <button
+              onClick={() => setIsMuted(!isMuted)}
+              className="absolute bottom-3 right-3 p-2 rounded-full bg-black/60 hover:bg-black/80 transition-colors"
+              aria-label={isMuted ? "Unmute" : "Mute"}
+            >
+              {isMuted ? (
+                <VolumeOff className="w-5 h-5 text-white" />
+              ) : (
+                <Volume2 className="w-5 h-5 text-white" />
+              )}
+            </button>
           </div>
 
           <div className="mt-2 flex flex-col gap-2 pb-2">
