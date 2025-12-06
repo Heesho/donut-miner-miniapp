@@ -831,7 +831,7 @@ export default function HomePage() {
                   </div>
                   <div className="flex items-baseline gap-2">
                     <span className="text-xl font-semibold text-pink-400">{glazeNetPriceDisplay}</span>
-                    <span className="text-sm text-gray-500 line-through">{glazePriceDisplay}</span>
+                    <span className="text-xs text-gray-500 line-through">{glazePriceDisplay}</span>
                   </div>
                   <div className="text-[10px] text-gray-400">
                     $
