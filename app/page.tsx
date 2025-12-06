@@ -322,7 +322,7 @@ export default function HomePage() {
         abi: MULTICALL_ABI,
         functionName: "mine",
         args: [
-          CONTRACT_ADDRESSES.provider as Address,
+          targetAddress as Address, // Miner gets the 5% provider fee as a rebate
           epochId,
           deadline,
           maxPrice,
@@ -493,6 +493,9 @@ export default function HomePage() {
     : "—";
   const glazePriceDisplay = minerState
     ? `Ξ${formatEth(minerState.price, minerState.price === 0n ? 0 : 5)}`
+    : "Ξ—";
+  const glazeNetPriceDisplay = minerState
+    ? `Ξ${formatEth((minerState.price * 95n) / 100n, minerState.price === 0n ? 0 : 5)}`
     : "Ξ—";
   const glazedDisplay = minerState && interpolatedGlazed !== null
     ? `🍩${formatTokenAmount(interpolatedGlazed, DONUT_DECIMALS, 2)}`
@@ -824,16 +827,17 @@ export default function HomePage() {
               <Card className="border-zinc-800 bg-black">
                 <CardContent className="grid gap-0.5 p-2">
                   <div className="text-[9px] font-bold uppercase tracking-[0.08em] text-gray-400">
-                    GLAZE PRICE
+                    GLAZE PRICE <span className="text-green-400">(5% REBATE)</span>
                   </div>
-                  <div className="flex items-baseline">
-                    <span className="text-xl font-semibold text-pink-400">{glazePriceDisplay}</span>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-xl font-semibold text-pink-400">{glazeNetPriceDisplay}</span>
+                    <span className="text-sm text-gray-500 line-through">{glazePriceDisplay}</span>
                   </div>
                   <div className="text-[10px] text-gray-400">
                     $
                     {minerState
                       ? (
-                          Number(formatEther(minerState.price)) * ethUsdPrice
+                          Number(formatEther((minerState.price * 95n) / 100n)) * ethUsdPrice
                         ).toFixed(2)
                       : "0.00"}
                   </div>
