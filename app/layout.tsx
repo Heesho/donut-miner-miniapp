@@ -36,6 +36,7 @@ export const metadata: Metadata = {
   },
   other: {
     "fc:miniapp": JSON.stringify(miniAppEmbed),
+    "base:app_id": "6939c6ae8a7c4e55fec73d2c",
   },
 };
 
