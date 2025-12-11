@@ -4,8 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { sdk } from "@farcaster/miniapp-sdk";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { NavBar } from "@/components/nav-bar";
-import { AddToFarcasterButton } from "@/components/add-to-farcaster-button";
-import { DuneDashboardButton } from "@/components/dune-dashboard-button";
+import { Wallet, BarChart3 } from "lucide-react";
 
 type MiniAppContext = {
   user?: {
@@ -76,7 +75,8 @@ export default function AboutPage() {
         }}
       >
         <div className="flex flex-1 flex-col overflow-hidden">
-          <div className="sticky top-0 z-10 bg-black pb-2 flex items-center justify-between">
+          {/* Header */}
+          <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold tracking-wide">ABOUT</h1>
             {context?.user ? (
               <div className="flex items-center gap-2 rounded-full bg-black px-3 py-1">
@@ -100,14 +100,26 @@ export default function AboutPage() {
             ) : null}
           </div>
 
-          <div className="space-y-6 px-2 overflow-y-auto scrollbar-hide flex-1">
+          <div className="mt-3 space-y-4 overflow-y-auto scrollbar-hide flex-1">
             <div className="grid grid-cols-2 gap-2">
-              <AddToFarcasterButton
-                variant="default"
-              />
-              <DuneDashboardButton
-                variant="default"
-              />
+              <a
+                href="https://zapper.xyz/account/0x69399790f5ef59d5074b7137c5de795837396444"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 rounded-xl border border-zinc-800 bg-gradient-to-br from-zinc-950 to-black px-4 py-3 text-sm font-bold text-white hover:border-pink-500/50 transition-colors"
+              >
+                <Wallet className="h-4 w-4 text-pink-400" />
+                Treasury
+              </a>
+              <a
+                href="https://dune.com/xyk/donut-company"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 rounded-xl border border-zinc-800 bg-gradient-to-br from-zinc-950 to-black px-4 py-3 text-sm font-bold text-white hover:border-pink-500/50 transition-colors"
+              >
+                <BarChart3 className="h-4 w-4 text-pink-400" />
+                Analytics
+              </a>
             </div>
 
             <section>
@@ -117,7 +129,7 @@ export default function AboutPage() {
               <ul className="space-y-1 text-sm text-gray-300 list-disc list-inside">
                 <li>$DONUT is a store-of-value token on Base</li>
                 <li>Mined through a continuous Dutch auction instead of proof-of-work or staking</li>
-                <li>Auction revenue increases $DONUT's liquidity and scarcity</li>
+                <li>Auction revenue increases $DONUT&apos;s liquidity and scarcity</li>
               </ul>
             </section>
 
@@ -140,7 +152,7 @@ export default function AboutPage() {
               </h2>
               <ul className="space-y-1 text-sm text-gray-300 list-disc list-inside">
                 <li>80% → previous King Glazer</li>
-                <li>15% → treasury (Blazery)</li>
+                <li>15% → treasury</li>
                 <li>5% → provider (frontend host)</li>
               </ul>
             </section>
@@ -161,7 +173,7 @@ export default function AboutPage() {
                 Proof of Just-In-Time Stake
               </h2>
               <ul className="space-y-1 text-sm text-gray-300 list-disc list-inside">
-                <li>ETH is "staked" only while controlling emissions</li>
+                <li>ETH is &quot;staked&quot; only while controlling emissions</li>
                 <li>Profit if the next purchase pays more</li>
                 <li>Lose if it pays less</li>
                 <li>Earn $DONUT the entire time you hold control</li>
@@ -170,11 +182,50 @@ export default function AboutPage() {
 
             <section>
               <h2 className="text-lg font-bold text-pink-400 mb-2">
-                Treasury
+                Governance (gDONUT)
               </h2>
               <ul className="space-y-1 text-sm text-gray-300 list-disc list-inside">
-                <li>Treasury ETH is used to buy and burn DONUT-WETH LP in the Blazery</li>
-                <li>Once sufficient liquidity is established, the Glazery can be upgraded to buy and burn DONUT directly, or governance can decide to acquire other assets or reinvest the treasury</li>
+                <li>Stake DONUT to receive gDONUT (1:1 ratio)</li>
+                <li>gDONUT is non-transferable and represents voting power</li>
+                <li>Delegate your voting power to yourself or another address</li>
+                <li>Must clear votes before unstaking</li>
+              </ul>
+            </section>
+
+            <section>
+              <h2 className="text-lg font-bold text-pink-400 mb-2">
+                Voting & Revenue Direction
+              </h2>
+              <ul className="space-y-1 text-sm text-gray-300 list-disc list-inside">
+                <li>Vote with gDONUT to direct treasury WETH to strategies</li>
+                <li>Votes are distributed proportionally based on weight</li>
+                <li>Can vote or reset once per 7-day epoch</li>
+                <li>Earn bribe rewards for voting on strategies</li>
+              </ul>
+            </section>
+
+            <section>
+              <h2 className="text-lg font-bold text-pink-400 mb-2">
+                Treasury Auctions
+              </h2>
+              <ul className="space-y-1 text-sm text-gray-300 list-disc list-inside">
+                <li>Treasury WETH is sold via Dutch auctions</li>
+                <li>Each strategy has its own auction with a payment token:</li>
+                <li className="pl-6 list-none">- DONUT Buyback: Pay DONUT, receive WETH</li>
+                <li className="pl-6 list-none">- DONUT-ETH LP: Pay LP tokens, receive WETH</li>
+                <li className="pl-6 list-none">- USDC Treasury: Pay USDC, receive WETH</li>
+                <li>Price decays over time - buy when profitable!</li>
+              </ul>
+            </section>
+
+            <section>
+              <h2 className="text-lg font-bold text-pink-400 mb-2">
+                Bribes
+              </h2>
+              <ul className="space-y-1 text-sm text-gray-300 list-disc list-inside">
+                <li>A portion of auction payments go to bribes</li>
+                <li>Voters earn bribes proportional to their vote weight</li>
+                <li>Claim accumulated rewards anytime on the Vote page</li>
               </ul>
             </section>
 

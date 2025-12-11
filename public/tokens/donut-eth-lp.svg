@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <!-- This is a placeholder - the component will show overlapping icons instead -->
+  <circle cx="35" cy="50" r="30" fill="#ec4899"/>
+  <circle cx="35" cy="50" r="12" fill="#1a1a1a"/>
+  <circle cx="65" cy="50" r="30" fill="#627eea"/>
+  <path d="M65 30L65 45L78 50L65 30Z" fill="#c0cbf6"/>
+  <path d="M65 30L52 50L65 45L65 30Z" fill="white"/>
+  <path d="M65 55L65 70L78 52L65 55Z" fill="#c0cbf6"/>
+  <path d="M65 55L52 52L65 70L65 55Z" fill="white"/>
+</svg>

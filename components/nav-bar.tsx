@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { Flame, Info } from "lucide-react";
+import { Gavel, Info, Lock, Vote, Pickaxe } from "lucide-react";
 
 export function NavBar() {
   const pathname = usePathname();
@@ -16,19 +16,8 @@ export function NavBar() {
         paddingTop: "8px",
       }}
     >
-      <div className="flex justify-around items-center max-w-[520px] mx-auto px-4">
-        <Link
-          href="/blazery"
-          className={cn(
-            "flex items-center justify-center p-3 transition-colors",
-            pathname === "/blazery"
-              ? "text-pink-400"
-              : "text-gray-400 hover:text-gray-300"
-          )}
-        >
-          <Flame className="w-6 h-6" />
-        </Link>
-
+      <div className="flex justify-around items-center max-w-[520px] mx-auto px-2">
+        {/* Auctions (Home) */}
         <Link
           href="/"
           className={cn(
@@ -38,14 +27,54 @@ export function NavBar() {
               : "text-gray-400 hover:text-gray-300"
           )}
         >
-          <div
-            className={cn(
-              "w-7 h-7 rounded-full border-[5px]",
-              pathname === "/" ? "border-pink-400" : "border-gray-400"
-            )}
-          />
+          <Gavel className="w-6 h-6" />
         </Link>
 
+        {/* Mine */}
+        <Link
+          href="/mine"
+          className={cn(
+            "flex items-center justify-center p-3 transition-colors",
+            pathname === "/mine"
+              ? "text-pink-400"
+              : "text-gray-400 hover:text-gray-300"
+          )}
+        >
+          <Pickaxe className="w-6 h-6" />
+        </Link>
+
+        {/* Stake */}
+        <Link
+          href="/stake"
+          className={cn(
+            "flex items-center justify-center p-3 transition-colors",
+            pathname === "/stake"
+              ? "text-pink-400"
+              : "text-gray-400 hover:text-gray-300"
+          )}
+        >
+          <div className={cn(
+            "w-6 h-6 rounded-full border-[5px]",
+            pathname === "/stake"
+              ? "border-pink-400"
+              : "border-current"
+          )} />
+        </Link>
+
+        {/* Vote */}
+        <Link
+          href="/vote"
+          className={cn(
+            "flex items-center justify-center p-3 transition-colors",
+            pathname === "/vote"
+              ? "text-pink-400"
+              : "text-gray-400 hover:text-gray-300"
+          )}
+        >
+          <Vote className="w-6 h-6" />
+        </Link>
+
+        {/* About */}
         <Link
           href="/about"
           className={cn(
