@@ -1,23 +1,18 @@
 {
-  "accountAssociation": {
-    "header": "eyJmaWQiOjI3MjEwOSwidHlwZSI6ImF1dGgiLCJrZXkiOiIweDQ5REI1QTFjOWZlRjBFMkY5OTVCNDZiMEI3MWJFQmJEOTEyQkYwZTMifQ",
-    "payload": "eyJkb21haW4iOiJnbGF6ZWNvcnAudmVyY2VsLmFwcCJ9",
-    "signature": "Xun297i8tZiQWxuVqo5bKPxSOs1CFDa1lFzDY4dJgOYJ7l16eBnWCJSxwqrgKnR0t74OmCHW7eg5HtIHMz+NZBs="
-  },
   "miniapp": {
     "version": "1",
     "name": "GlazeCorp",
     "tagline": "Together we glaze the world",
     "description": "Command GlazeCorp's donut mine, compete for control, and keep the rewards flowing on Base.",
-    "iconUrl": "https://glazecorp.vercel.app/media/icon.png",
-    "homeUrl": "https://glazecorp.vercel.app/",
-    "splashImageUrl": "https://glazecorp.vercel.app/media/splash.png",
+    "iconUrl": "https://donut-miner-miniapp-git-feature-voting-logic-xyk-labs-projects.vercel.app/media/icon.png",
+    "homeUrl": "https://donut-miner-miniapp-git-feature-voting-logic-xyk-labs-projects.vercel.app/",
+    "splashImageUrl": "https://donut-miner-miniapp-git-feature-voting-logic-xyk-labs-projects.vercel.app/media/splash.png",
     "splashBackgroundColor": "#FEE7EC",
-    "heroImageUrl": "https://glazecorp.vercel.app/media/hero.png",
+    "heroImageUrl": "https://donut-miner-miniapp-git-feature-voting-logic-xyk-labs-projects.vercel.app/media/hero.png",
     "buttonTitle": "We Glaze The World",
     "ogTitle": "We Glaze The World",
     "ogDescription": "Race the rink to seize the donut mine and keep the glaze flowing.",
-    "ogImageUrl": "https://glazecorp.vercel.app/media/hero.png",
+    "ogImageUrl": "https://donut-miner-miniapp-git-feature-voting-logic-xyk-labs-projects.vercel.app/media/hero.png",
     "requiredChains": [
       "eip155:8453"
     ],
