@@ -157,13 +157,10 @@ export default function MinePage() {
   }, []);
 
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      if (!readyRef.current) {
-        readyRef.current = true;
-        sdk.actions.ready().catch(() => {});
-      }
-    }, 1200);
-    return () => clearTimeout(timeout);
+    if (!readyRef.current) {
+      readyRef.current = true;
+      sdk.actions.ready().catch(() => {});
+    }
   }, []);
 
   // Fetch ETH price on mount and every minute

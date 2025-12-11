@@ -47,13 +47,10 @@ export default function AboutPage() {
   }, []);
 
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      if (!readyRef.current) {
-        readyRef.current = true;
-        sdk.actions.ready().catch(() => {});
-      }
-    }, 1200);
-    return () => clearTimeout(timeout);
+    if (!readyRef.current) {
+      readyRef.current = true;
+      sdk.actions.ready().catch(() => {});
+    }
   }, []);
 
   const userDisplayName =
