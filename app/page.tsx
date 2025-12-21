@@ -167,6 +167,13 @@ export default function HomePage() {
     return () => clearTimeout(timeout);
   }, []);
 
+  // Ensure video is muted on mount for autoplay to work in all WebViews
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.muted = true;
+    }
+  }, []);
+
   // Fetch ETH price on mount and every minute
   useEffect(() => {
     const fetchPrice = async () => {
@@ -788,13 +795,18 @@ export default function HomePage() {
               className="w-full object-contain"
               autoPlay
               loop
-              muted={isMuted}
+              muted
               playsInline
               preload="auto"
               src="/media/donut-loop.mp4"
             />
             <button
-              onClick={() => setIsMuted(!isMuted)}
+              onClick={() => {
+                if (videoRef.current) {
+                  videoRef.current.muted = !videoRef.current.muted;
+                }
+                setIsMuted(!isMuted);
+              }}
               className="absolute bottom-3 right-3 p-2 rounded-full bg-black/60 hover:bg-black/80 transition-colors"
               aria-label={isMuted ? "Unmute" : "Mute"}
             >
