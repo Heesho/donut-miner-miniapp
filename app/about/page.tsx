@@ -100,7 +100,7 @@ export default function AboutPage() {
           <div className="mt-3 space-y-4 overflow-y-auto scrollbar-hide flex-1">
             <div className="grid grid-cols-2 gap-2">
               <a
-                href="https://zapper.xyz/account/0x69399790f5ef59d5074b7137c5de795837396444"
+                href="https://zapper.xyz/account/0x2236f324bd357e8b06f3e43ffde75a0b89e75a6e"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-center gap-2 rounded-xl border border-zinc-800 bg-gradient-to-br from-zinc-950 to-black px-4 py-3 text-sm font-bold text-white hover:border-pink-500/50 transition-colors"
@@ -179,50 +179,65 @@ export default function AboutPage() {
 
             <section>
               <h2 className="text-lg font-bold text-pink-400 mb-2">
-                Governance (gDONUT)
+                Liquid Signal Governance (LSG)
+              </h2>
+              <ul className="space-y-1 text-sm text-gray-300 list-disc list-inside">
+                <li>A decentralized protocol for managing revenue allocation through liquid democracy</li>
+                <li>Token holders vote on strategies to determine how protocol revenue is distributed</li>
+                <li>No multisigs or hard-coded fee splits - voting power directly influences proportional distribution</li>
+                <li>Flexible strategies: buybacks, LP accumulation, treasury diversification, and more</li>
+              </ul>
+            </section>
+
+            <section>
+              <h2 className="text-lg font-bold text-pink-400 mb-2">
+                Staking for Voting Power
               </h2>
               <ul className="space-y-1 text-sm text-gray-300 list-disc list-inside">
                 <li>Stake DONUT to receive gDONUT (1:1 ratio)</li>
-                <li>gDONUT is non-transferable and represents voting power</li>
+                <li>gDONUT is non-transferable - prevents flash loan attacks on governance</li>
                 <li>Delegate your voting power to yourself or another address</li>
-                <li>Must clear votes before unstaking</li>
+                <li>Must clear all votes before unstaking</li>
               </ul>
             </section>
 
             <section>
               <h2 className="text-lg font-bold text-pink-400 mb-2">
-                Voting & Revenue Direction
+                Voting on Strategies
               </h2>
               <ul className="space-y-1 text-sm text-gray-300 list-disc list-inside">
-                <li>Vote with gDONUT to direct treasury WETH to strategies</li>
-                <li>Votes are distributed proportionally based on weight</li>
-                <li>Can vote or reset once per 7-day epoch</li>
-                <li>Earn bribe rewards for voting on strategies</li>
+                <li>Allocate your voting power across multiple strategies</li>
+                <li>Vote weights determine proportional revenue distribution</li>
+                <li>One epoch delay between voting and resetting (7 days)</li>
+                <li>Revenue flows through RevenueRouter to the Voter contract</li>
               </ul>
             </section>
 
             <section>
               <h2 className="text-lg font-bold text-pink-400 mb-2">
-                Treasury Auctions
+                Dutch Auctions
               </h2>
               <ul className="space-y-1 text-sm text-gray-300 list-disc list-inside">
-                <li>Treasury WETH is sold via Dutch auctions</li>
-                <li>Each strategy has its own auction with a payment token:</li>
+                <li>Treasury WETH is sold via descending-price auctions</li>
+                <li>Price starts high and decays linearly toward zero over the epoch</li>
+                <li>Current strategies:</li>
                 <li className="pl-6 list-none">- DONUT Buyback: Pay DONUT, receive WETH</li>
                 <li className="pl-6 list-none">- DONUT-ETH LP: Pay LP tokens, receive WETH</li>
                 <li className="pl-6 list-none">- USDC Treasury: Pay USDC, receive WETH</li>
-                <li>Price decays over time - buy when profitable!</li>
+                <li className="pl-6 list-none">- cbBTC Treasury: Pay cbBTC, receive WETH</li>
+                <li>Buy when the price is profitable for you!</li>
               </ul>
             </section>
 
             <section>
               <h2 className="text-lg font-bold text-pink-400 mb-2">
-                Bribes
+                Voter Incentives (Bribes)
               </h2>
               <ul className="space-y-1 text-sm text-gray-300 list-disc list-inside">
-                <li>A portion of auction payments go to bribes</li>
-                <li>Voters earn bribes proportional to their vote weight</li>
+                <li>20% of auction payments are routed to bribe contracts</li>
+                <li>Voters earn rewards proportional to their vote weight on each strategy</li>
                 <li>Claim accumulated rewards anytime on the Vote page</li>
+                <li>Creates sustainable incentives for governance participation</li>
               </ul>
             </section>
 

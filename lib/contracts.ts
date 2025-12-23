@@ -11,26 +11,29 @@ export const CONTRACT_ADDRESSES = {
   provider: "0xba366c82815983ff130c23ced78bd95e1f2c18ea",
 
   // LSG (Liquid Signal Governance) contracts
-  dao: "0x69399790f5ef59d5074b7137C5De795837396444",
-  governanceToken: "0xFbE43EF88274fC7C5136298157272510bB634D47", // gDONUT
-  voter: "0xfeA7231547bd2ccB1Db85069EFA14DE87927a3b2",
-  revenueRouter: "0xc3B0C178204fdDDFcfEbf150a02DDd4949dEe141",
-  lsgMulticall: "0x8fB5378DdA99F0E7395F483045db6D2C32456a08",
+  dao: "0x2236f324Bd357E8b06f3e43ffDE75A0b89E75A6e",
+  governanceToken: "0x2e5BaC759449b9673Ce2e2e7C87cFce8D8A0b2c3", // gDONUT
+  voter: "0x1fAfC7Ec84ee588F1836833a4217b8a3e6632522",
+  revenueRouter: "0x4799CBe9782265C0633d24c7311dD029090dED33",
+  lsgMulticall: "0x1a90e9A7f0ED2C0CB054F470e8F9c06a935B9789",
 
   // Strategy 0: Buy DONUT and send to DAO
-  strategy0: "0xFA995AD01489BD8CBDeeF7DCcB5f6Da7E7Feb297",
-  bribe0: "0xCeb774dCa56964547b98C88C39a5189d1f449cD0",
-  bribeRouter0: "0x3E4de31F1ff82230AB22Bd0331f17216D66415aD",
+  strategy0: "0x7A3f1590fB39708cbba532DD2722323605585a5c",
+  bribe0: "0x7262682080Cb7258B9a7Def3a984794Ad6FF19EA",
+  bribeRouter0: "0x1D28c3C90D6470770646Bc2504106998433B6814",
 
   // Strategy 1: Buy DONUT-ETH LP and send to DAO
-  strategy1: "0x361266B1aacCa78C6ea5DF92313c39186A0fC7f6",
-  bribe1: "0x39634926f255abB4cC6d2E5fa00c6a1e3a454313",
-  bribeRouter1: "0x356d05cEBe677F415b1c830404a0005373D5832F",
+  strategy1: "0xcD1Ba332830EF5336Fb0A061cC77e56A80d977d8",
+  bribe1: "0xdA81790d0D0B53cBd08C20b6c33FA3Ba4c7fa7cc",
+  bribeRouter1: "0x898aaDf6C0B301c72F5C88620f2B448bc16e940C",
 
   // Strategy 2: Buy USDC and send to DAO
-  strategy2: "0x40Ac6578904D68726CEFAe1b9876421B76247E09",
-  bribe2: "0xc7aD1976F705309dE2773693b4b67536D951E1Ce",
-  bribeRouter2: "0x0C9343697Bf8543dd5B063BE5fB9d1d39201b31E",
+  strategy2: "0x712705fEd5DDf9E5E069Cc79e66A91679b738323",
+  bribe2: "0xa4B6949A4aDb264789A4F6D50847190C00C73789",
+  bribeRouter2: "0x92bb1cbbb8Dcb3B4dF62E2476FCC6FDa365B60b7",
+
+  // Strategy 3: Buy cbBTC and send to DAO
+  strategy3: "0x0367399680190889DCa29f3c4B72f5F533CA7cea",
 } as const;
 
 // Original miner multicall ABI
@@ -680,6 +683,7 @@ export const STRATEGY_NAMES: Record<string, string> = {
   [CONTRACT_ADDRESSES.strategy0.toLowerCase()]: "Buy DONUT → DAO",
   [CONTRACT_ADDRESSES.strategy1.toLowerCase()]: "Buy DONUT-ETH LP → DAO",
   [CONTRACT_ADDRESSES.strategy2.toLowerCase()]: "Buy USDC → DAO",
+  [CONTRACT_ADDRESSES.strategy3.toLowerCase()]: "Buy cbBTC → DAO",
 };
 
 // Payment token symbols for display

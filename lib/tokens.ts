@@ -17,8 +17,9 @@ export const TOKEN_ADDRESSES = {
   donut: "0xae4a37d554c6d6f3e398546d8566b25052e0169c" as Address,
   weth: "0x4200000000000000000000000000000000000006" as Address,
   usdc: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913" as Address,
+  cbbtc: "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf" as Address,
   donutEthLp: "0xD1DbB2E56533C55C3A637D13C53aeEf65c5D5703" as Address,
-  gDonut: "0xFbE43EF88274fC7C5136298157272510bB634D47" as Address,
+  gDonut: "0x2e5BaC759449b9673Ce2e2e7C87cFce8D8A0b2c3" as Address,
 } as const;
 
 // Token metadata registry
@@ -28,7 +29,7 @@ export const TOKENS: Record<string, TokenInfo> = {
     name: "Donut",
     symbol: "DONUT",
     decimals: 18,
-    icon: "/tokens/donut.svg",
+    icon: "https://coin-images.coingecko.com/coins/images/70995/small/donut-logo.jpg?1765020130",
     coingeckoId: "donut-2",
   },
   [TOKEN_ADDRESSES.weth.toLowerCase()]: {
@@ -36,7 +37,7 @@ export const TOKENS: Record<string, TokenInfo> = {
     name: "Wrapped Ether",
     symbol: "WETH",
     decimals: 18,
-    icon: "/tokens/eth.svg",
+    icon: "https://coin-images.coingecko.com/coins/images/279/small/ethereum.png?1696501628",
     coingeckoId: "ethereum",
   },
   [TOKEN_ADDRESSES.usdc.toLowerCase()]: {
@@ -44,8 +45,16 @@ export const TOKENS: Record<string, TokenInfo> = {
     name: "USD Coin",
     symbol: "USDC",
     decimals: 6,
-    icon: "/tokens/usdc.svg",
+    icon: "https://coin-images.coingecko.com/coins/images/6319/small/usdc.png?1696506694",
     coingeckoId: "usd-coin",
+  },
+  [TOKEN_ADDRESSES.cbbtc.toLowerCase()]: {
+    address: TOKEN_ADDRESSES.cbbtc,
+    name: "Coinbase Wrapped BTC",
+    symbol: "cbBTC",
+    decimals: 8,
+    icon: "https://coin-images.coingecko.com/coins/images/40143/small/cbbtc.webp?1726136727",
+    coingeckoId: "coinbase-wrapped-btc",
   },
   [TOKEN_ADDRESSES.donutEthLp.toLowerCase()]: {
     address: TOKEN_ADDRESSES.donutEthLp,
