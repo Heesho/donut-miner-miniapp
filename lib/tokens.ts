@@ -19,7 +19,7 @@ export const TOKEN_ADDRESSES = {
   usdc: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913" as Address,
   cbbtc: "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf" as Address,
   donutEthLp: "0xD1DbB2E56533C55C3A637D13C53aeEf65c5D5703" as Address,
-  gDonut: "0x2e5BaC759449b9673Ce2e2e7C87cFce8D8A0b2c3" as Address,
+  gDonut: "0xC78B6e362cB0f48b59E573dfe7C99d92153a16d3" as Address,
 } as const;
 
 // Token metadata registry
@@ -29,7 +29,7 @@ export const TOKENS: Record<string, TokenInfo> = {
     name: "Donut",
     symbol: "DONUT",
     decimals: 18,
-    icon: "https://coin-images.coingecko.com/coins/images/70995/small/donut-logo.jpg?1765020130",
+    icon: "/tokens/donut.svg",
     coingeckoId: "donut-2",
   },
   [TOKEN_ADDRESSES.weth.toLowerCase()]: {
@@ -250,21 +250,46 @@ export async function getLpTokenPrice(
   const token0 = getTokenInfo(token0Address);
   const token1 = getTokenInfo(token1Address);
 
-  // Find which token has a price (prefer WETH, then USDC)
+  // Find which token to use for pricing
+  // Priority: WETH > USDC > other tokens with coingecko IDs
   let priceableReserve: bigint;
   let priceableDecimals: number;
   let priceablePrice: number;
 
-  if (token1?.coingeckoId || token1?.symbol === "USDC") {
-    // token1 is priceable (likely WETH or USDC)
+  const token0IsWeth = token0Address.toLowerCase() === TOKEN_ADDRESSES.weth.toLowerCase();
+  const token1IsWeth = token1Address.toLowerCase() === TOKEN_ADDRESSES.weth.toLowerCase();
+  const token0IsUsdc = token0?.symbol === "USDC";
+  const token1IsUsdc = token1?.symbol === "USDC";
+
+  if (token0IsWeth) {
+    // Prefer WETH in token0
+    priceableReserve = reserves.reserve0;
+    priceableDecimals = token0!.decimals;
+    priceablePrice = await getTokenPrice(token0Address);
+  } else if (token1IsWeth) {
+    // Prefer WETH in token1
     priceableReserve = reserves.reserve1;
-    priceableDecimals = token1.decimals;
+    priceableDecimals = token1!.decimals;
     priceablePrice = await getTokenPrice(token1Address);
-  } else if (token0?.coingeckoId || token0?.symbol === "USDC") {
-    // token0 is priceable
+  } else if (token0IsUsdc) {
+    // Then prefer USDC in token0
+    priceableReserve = reserves.reserve0;
+    priceableDecimals = token0!.decimals;
+    priceablePrice = 1;
+  } else if (token1IsUsdc) {
+    // Then prefer USDC in token1
+    priceableReserve = reserves.reserve1;
+    priceableDecimals = token1!.decimals;
+    priceablePrice = 1;
+  } else if (token0?.coingeckoId) {
+    // Fall back to any token with coingecko ID
     priceableReserve = reserves.reserve0;
     priceableDecimals = token0.decimals;
     priceablePrice = await getTokenPrice(token0Address);
+  } else if (token1?.coingeckoId) {
+    priceableReserve = reserves.reserve1;
+    priceableDecimals = token1.decimals;
+    priceablePrice = await getTokenPrice(token1Address);
   } else {
     // Can't price this LP
     return 0;

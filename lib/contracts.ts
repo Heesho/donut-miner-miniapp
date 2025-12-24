@@ -12,28 +12,11 @@ export const CONTRACT_ADDRESSES = {
 
   // LSG (Liquid Signal Governance) contracts
   dao: "0x2236f324Bd357E8b06f3e43ffDE75A0b89E75A6e",
-  governanceToken: "0x2e5BaC759449b9673Ce2e2e7C87cFce8D8A0b2c3", // gDONUT
-  voter: "0x1fAfC7Ec84ee588F1836833a4217b8a3e6632522",
+  governanceToken: "0xC78B6e362cB0f48b59E573dfe7C99d92153a16d3", // gDONUT
+  voter: "0x9C5Cf3246d7142cdAeBBD5f653d95ACB73DdabA6",
   revenueRouter: "0x4799CBe9782265C0633d24c7311dD029090dED33",
-  lsgMulticall: "0x1a90e9A7f0ED2C0CB054F470e8F9c06a935B9789",
+  lsgMulticall: "0xB68F5446F7Cce3a83fa374D232022f21e4C58645",
 
-  // Strategy 0: Buy DONUT and send to DAO
-  strategy0: "0x7A3f1590fB39708cbba532DD2722323605585a5c",
-  bribe0: "0x7262682080Cb7258B9a7Def3a984794Ad6FF19EA",
-  bribeRouter0: "0x1D28c3C90D6470770646Bc2504106998433B6814",
-
-  // Strategy 1: Buy DONUT-ETH LP and send to DAO
-  strategy1: "0xcD1Ba332830EF5336Fb0A061cC77e56A80d977d8",
-  bribe1: "0xdA81790d0D0B53cBd08C20b6c33FA3Ba4c7fa7cc",
-  bribeRouter1: "0x898aaDf6C0B301c72F5C88620f2B448bc16e940C",
-
-  // Strategy 2: Buy USDC and send to DAO
-  strategy2: "0x712705fEd5DDf9E5E069Cc79e66A91679b738323",
-  bribe2: "0xa4B6949A4aDb264789A4F6D50847190C00C73789",
-  bribeRouter2: "0x92bb1cbbb8Dcb3B4dF62E2476FCC6FDa365B60b7",
-
-  // Strategy 3: Buy cbBTC and send to DAO
-  strategy3: "0x0367399680190889DCa29f3c4B72f5F533CA7cea",
 } as const;
 
 // Original miner multicall ABI
@@ -678,17 +661,13 @@ export const ERC20_ABI = [
   },
 ] as const;
 
-// Strategy names for display
-export const STRATEGY_NAMES: Record<string, string> = {
-  [CONTRACT_ADDRESSES.strategy0.toLowerCase()]: "Buy DONUT → DAO",
-  [CONTRACT_ADDRESSES.strategy1.toLowerCase()]: "Buy DONUT-ETH LP → DAO",
-  [CONTRACT_ADDRESSES.strategy2.toLowerCase()]: "Buy USDC → DAO",
-  [CONTRACT_ADDRESSES.strategy3.toLowerCase()]: "Buy cbBTC → DAO",
-};
+// cbBTC address on Base
+export const CBBTC_ADDRESS = "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf";
 
 // Payment token symbols for display
 export const PAYMENT_TOKEN_SYMBOLS: Record<string, string> = {
   [CONTRACT_ADDRESSES.donut.toLowerCase()]: "DONUT",
   [CONTRACT_ADDRESSES.donutEthLp.toLowerCase()]: "DONUT-ETH LP",
   [CONTRACT_ADDRESSES.usdc.toLowerCase()]: "USDC",
+  [CBBTC_ADDRESS.toLowerCase()]: "cbBTC",
 };

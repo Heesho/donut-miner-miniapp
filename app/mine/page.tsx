@@ -21,6 +21,8 @@ import { CONTRACT_ADDRESSES, MINER_MULTICALL_ABI } from "@/lib/contracts";
 import { cn, getEthPrice } from "@/lib/utils";
 import { useAccountData } from "@/hooks/useAccountData";
 import { NavBar } from "@/components/nav-bar";
+import { TokenIcon } from "@/components/token-icon";
+import { TOKEN_ADDRESSES } from "@/lib/tokens";
 
 type MiniAppContext = {
   user?: {
@@ -494,8 +496,8 @@ export default function MinePage() {
     ? `Ξ${formatEth((minerState.price * 95n) / 100n, minerState.price === 0n ? 0 : 5)}`
     : "Ξ—";
   const glazedDisplay = minerState && interpolatedGlazed !== null
-    ? `🍩${formatTokenAmount(interpolatedGlazed, DONUT_DECIMALS, 2)}`
-    : "🍩—";
+    ? formatTokenAmount(interpolatedGlazed, DONUT_DECIMALS, 2)
+    : "—";
 
   // Format glaze elapsed time with units
   const formatGlazeTime = (seconds: number): string => {
@@ -701,8 +703,8 @@ export default function MinePage() {
                   <div className="text-[7px] font-bold uppercase tracking-[0.08em] text-gray-400 w-9 text-right">
                     GLAZED
                   </div>
-                  <div className="text-[10px] font-semibold text-white">
-                    +{glazedDisplay}
+                  <div className="flex items-center gap-0.5 text-[10px] font-semibold text-white">
+                    +<TokenIcon address={TOKEN_ADDRESSES.donut} size={12} />{glazedDisplay}
                   </div>
                   <div className="text-[8px] text-gray-400">
                     +${glazedUsdValue}
@@ -806,8 +808,8 @@ export default function MinePage() {
                   <div className="text-[9px] font-bold uppercase tracking-[0.08em] text-gray-400">
                     GLAZE RATE
                   </div>
-                  <div className="flex items-baseline">
-                    <span className="text-base leading-none">🍩</span>
+                  <div className="flex items-center gap-1">
+                    <TokenIcon address={TOKEN_ADDRESSES.donut} size={20} />
                     <span className="text-xl font-semibold text-white">{glazeRateDisplay}</span>
                     <span className="text-[10px] text-gray-400">/s</span>
                   </div>
@@ -866,13 +868,13 @@ export default function MinePage() {
               {/* Left Column - Donut Balance & Mined */}
               <div className="flex flex-col gap-0.5 items-start">
                 <div className="flex items-center gap-1.5 text-[11px] font-semibold">
-                  <span>🍩</span>
+                  <TokenIcon address={TOKEN_ADDRESSES.donut} size={14} />
                   <span>{donutBalanceDisplay}</span>
                 </div>
                 <div className="flex flex-col items-start text-[11px]">
                   <span className="text-gray-400 mb-0">Mined</span>
                   <div className="flex items-center gap-1">
-                    <span>🍩</span>
+                    <TokenIcon address={TOKEN_ADDRESSES.donut} size={12} />
                     <span className="font-semibold">
                       {address && accountData?.mined
                         ? Number(accountData.mined).toLocaleString(undefined, {

@@ -24,6 +24,7 @@ import {
 } from "@/lib/contracts";
 import { cn } from "@/lib/utils";
 import { NavBar } from "@/components/nav-bar";
+import { TokenIcon } from "@/components/token-icon";
 
 type MiniAppContext = {
   user?: {
@@ -120,14 +121,6 @@ const getPaymentTokenSymbol = (address: Address): string => {
   return PAYMENT_TOKEN_SYMBOLS[address.toLowerCase()] || "TOKEN";
 };
 
-// Get token icon path
-const getTokenIcon = (address: Address): string => {
-  const symbol = getPaymentTokenSymbol(address).toLowerCase();
-  if (symbol === "donut") return "/tokens/donut.svg";
-  if (symbol === "donut-eth lp") return "/tokens/donut-eth-lp.svg";
-  if (symbol === "usdc") return "/tokens/usdc.svg";
-  return "/tokens/unknown.svg";
-};
 
 // Get strategy action and destination from payment token
 const getStrategyInfo = (paymentToken: Address): { action: string; destination: string } => {
@@ -639,7 +632,7 @@ export default function VotePage() {
                           <div className="text-[8px] text-gray-500 uppercase mt-1">Earned</div>
                           <div className="flex items-center justify-center gap-1">
                             {strategyData && (
-                              <img src={getTokenIcon(strategyData.paymentToken)} alt={paymentTokenSymbol} className="w-3 h-3" />
+                              <TokenIcon address={strategyData.paymentToken} size={12} />
                             )}
                             <span className="text-xs font-bold text-white">
                               {userEarned > 0n ? formatTokenAmount(userEarned, earnedDecimals, 4) : "0"}
