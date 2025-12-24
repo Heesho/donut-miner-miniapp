@@ -12,7 +12,6 @@ import {
 } from "wagmi";
 import { base } from "wagmi/chains";
 import { formatEther, formatUnits, parseUnits, zeroAddress, type Address } from "viem";
-import { useBatchedTransaction, encodeApproveCall, encodeContractCall } from "@/hooks/useBatchedTransaction";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -122,6 +121,7 @@ export default function StakePage() {
   const [txStep, setTxStep] = useState<"idle" | "approving" | "staking" | "unstaking" | "delegating" | "resetting">("idle");
   const [delegateAddress, setDelegateAddress] = useState("");
   const [showDelegateInput, setShowDelegateInput] = useState(false);
+  const [pendingStakeAmount, setPendingStakeAmount] = useState<bigint | null>(null);
 
   const txResultTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -241,12 +241,22 @@ export default function StakePage() {
     return voterData.accountUsedWeights === 0n;
   }, [voterData]);
 
-  // Batched transaction hook for stake (approve + stake in one atomic batch)
+  // Regular write hooks for approve and stake (sequential)
   const {
-    execute: executeStakeBatch,
-    state: stakeBatchState,
-    reset: resetStakeBatch,
-  } = useBatchedTransaction();
+    data: approveTxHash,
+    writeContract: writeApprove,
+    isPending: isApprovePending,
+    error: approveError,
+    reset: resetApprove,
+  } = useWriteContract();
+
+  const {
+    data: stakeTxHash,
+    writeContract: writeStake,
+    isPending: isStakePending,
+    error: stakeError,
+    reset: resetStake,
+  } = useWriteContract();
 
   // Regular write hooks for unstake
   const {
@@ -271,6 +281,16 @@ export default function StakePage() {
   } = useWriteContract();
 
   // Wait for receipts
+  const { data: approveReceipt, isLoading: isApproveConfirming } = useWaitForTransactionReceipt({
+    hash: approveTxHash,
+    chainId: base.id,
+  });
+
+  const { data: stakeReceipt, isLoading: isStakeConfirming } = useWaitForTransactionReceipt({
+    hash: stakeTxHash,
+    chainId: base.id,
+  });
+
   const { data: unstakeReceipt, isLoading: isUnstakeConfirming } = useWaitForTransactionReceipt({
     hash: unstakeTxHash,
     chainId: base.id,
@@ -286,21 +306,70 @@ export default function StakePage() {
     chainId: base.id,
   });
 
-  // Handle stake batch completion
+  // Handle approve completion - trigger stake
   useEffect(() => {
-    if (stakeBatchState === "success") {
+    if (approveReceipt?.status === "success" && pendingStakeAmount !== null && txStep === "approving") {
+      // Approval succeeded, now stake
+      console.log("[Stake] Approval confirmed, now staking...");
+      setTxStep("staking");
+      resetApprove();
+      writeStake({
+        address: CONTRACT_ADDRESSES.governanceToken as Address,
+        abi: GOVERNANCE_TOKEN_ABI,
+        functionName: "stake",
+        args: [pendingStakeAmount],
+        chainId: base.id,
+      });
+    } else if (approveReceipt?.status === "reverted") {
+      console.error("[Stake] Approval reverted");
+      showTxResult("failure");
+      setTxStep("idle");
+      setPendingStakeAmount(null);
+      resetApprove();
+    }
+  }, [approveReceipt, pendingStakeAmount, txStep, resetApprove, writeStake, showTxResult]);
+
+  // Handle approve error
+  useEffect(() => {
+    if (approveError && txStep === "approving") {
+      console.error("[Stake] Approval error:", approveError);
+      showTxResult("failure");
+      setTxStep("idle");
+      setPendingStakeAmount(null);
+      resetApprove();
+    }
+  }, [approveError, txStep, showTxResult, resetApprove]);
+
+  // Handle stake completion
+  useEffect(() => {
+    if (stakeReceipt?.status === "success") {
+      console.log("[Stake] Stake confirmed!");
       showTxResult("success");
       refetchVoterData();
       refetchAllowance();
       setAmount("");
       setTxStep("idle");
-      resetStakeBatch();
-    } else if (stakeBatchState === "error") {
+      setPendingStakeAmount(null);
+      resetStake();
+    } else if (stakeReceipt?.status === "reverted") {
+      console.error("[Stake] Stake reverted");
       showTxResult("failure");
       setTxStep("idle");
-      resetStakeBatch();
+      setPendingStakeAmount(null);
+      resetStake();
     }
-  }, [stakeBatchState, refetchVoterData, refetchAllowance, resetStakeBatch, showTxResult]);
+  }, [stakeReceipt, refetchVoterData, refetchAllowance, resetStake, showTxResult]);
+
+  // Handle stake error
+  useEffect(() => {
+    if (stakeError && txStep === "staking") {
+      console.error("[Stake] Stake error:", stakeError);
+      showTxResult("failure");
+      setTxStep("idle");
+      setPendingStakeAmount(null);
+      resetStake();
+    }
+  }, [stakeError, txStep, showTxResult, resetStake]);
 
   // Handle unstake completion
   useEffect(() => {
@@ -348,36 +417,35 @@ export default function StakePage() {
     }
   }, [resetVotesReceipt, refetchVoterData, resetResetVotes, showTxResult]);
 
-  // Handle stake - uses batched transaction (approve + stake in one atomic batch)
+  // Handle stake - sequential transactions (approve first if needed, then stake)
   const handleStake = useCallback(async () => {
     if (!address || parsedAmount === 0n) return;
-    setTxStep("staking");
 
-    const calls = [];
-
-    // Add approval call if needed
     if (needsApproval) {
-      calls.push(
-        encodeApproveCall(
-          CONTRACT_ADDRESSES.donut as Address,
-          CONTRACT_ADDRESSES.governanceToken as Address,
-          parsedAmount
-        )
-      );
+      // Need approval first - approve then stake
+      console.log("[Stake] Starting approval for amount:", parsedAmount.toString());
+      setTxStep("approving");
+      setPendingStakeAmount(parsedAmount);
+      writeApprove({
+        address: CONTRACT_ADDRESSES.donut as Address,
+        abi: ERC20_ABI,
+        functionName: "approve",
+        args: [CONTRACT_ADDRESSES.governanceToken as Address, parsedAmount],
+        chainId: base.id,
+      });
+    } else {
+      // No approval needed - stake directly
+      console.log("[Stake] No approval needed, staking directly:", parsedAmount.toString());
+      setTxStep("staking");
+      writeStake({
+        address: CONTRACT_ADDRESSES.governanceToken as Address,
+        abi: GOVERNANCE_TOKEN_ABI,
+        functionName: "stake",
+        args: [parsedAmount],
+        chainId: base.id,
+      });
     }
-
-    // Add stake call
-    calls.push(
-      encodeContractCall(
-        CONTRACT_ADDRESSES.governanceToken as Address,
-        GOVERNANCE_TOKEN_ABI,
-        "stake",
-        [parsedAmount]
-      )
-    );
-
-    await executeStakeBatch(calls);
-  }, [address, parsedAmount, needsApproval, executeStakeBatch]);
+  }, [address, parsedAmount, needsApproval, writeApprove, writeStake]);
 
   // Handle unstake
   const handleUnstake = useCallback(async () => {
@@ -471,7 +539,7 @@ export default function StakePage() {
   const userHandle = context?.user?.username ? `@${context.user.username}` : context?.user?.fid ? `fid ${context.user.fid}` : "";
   const userAvatarUrl = context?.user?.pfpUrl ?? null;
 
-  const isStaking = stakeBatchState === "pending" || stakeBatchState === "confirming";
+  const isStaking = isApprovePending || isApproveConfirming || isStakePending || isStakeConfirming;
   const isBusy = txStep !== "idle" || isStaking || isUnstakePending || isDelegatePending || isResetVotesPending || isUnstakeConfirming || isDelegateConfirming || isResetVotesConfirming;
 
   const maxBalance = mode === "stake"
@@ -666,7 +734,8 @@ export default function StakePage() {
           >
             {txResult === "success" ? "SUCCESS!" :
              txResult === "failure" ? "FAILED" :
-             txStep === "staking" || isStaking ? "STAKING..." :
+             txStep === "approving" || isApproveConfirming ? "APPROVING..." :
+             txStep === "staking" || isStakePending || isStakeConfirming ? "STAKING..." :
              txStep === "unstaking" || isUnstakeConfirming ? "UNSTAKING..." :
              mode === "stake" ? "STAKE DONUT" : "UNSTAKE gDONUT"}
           </Button>
