@@ -232,7 +232,7 @@ export default function StakePage() {
   }, [amount]);
 
   const needsApproval = useMemo(() => {
-    if (mode !== "stake" || !donutAllowance || parsedAmount === 0n) return false;
+    if (mode !== "stake" || donutAllowance === undefined || parsedAmount === 0n) return false;
     return (donutAllowance as bigint) < parsedAmount;
   }, [mode, donutAllowance, parsedAmount]);
 
