@@ -114,17 +114,21 @@ export function useBatchedTransaction(): UseBatchedTransactionReturn {
   useEffect(() => {
     if (!isSequentialMode.current || !pendingCalls) return;
 
+    console.log("[BatchTx] Sequential mode check - isSeqSuccess:", isSeqSuccess, "currentCallIndex:", currentCallIndex, "lastProcessedIndex:", lastProcessedIndex.current);
+
     if (isSeqSuccess && currentCallIndex !== lastProcessedIndex.current) {
       lastProcessedIndex.current = currentCallIndex;
       const nextIndex = currentCallIndex + 1;
 
       if (nextIndex >= pendingCalls.length) {
         // All calls completed
+        console.log("[BatchTx] All sequential calls completed!");
         setState("success");
         setPendingCalls(null);
         isSequentialMode.current = false;
       } else {
         // Execute next call
+        console.log("[BatchTx] Executing next call:", nextIndex);
         setCurrentCallIndex(nextIndex);
         const nextCall = pendingCalls[nextIndex];
         resetSeq();
@@ -144,6 +148,7 @@ export function useBatchedTransaction(): UseBatchedTransactionReturn {
   // Handle sequential errors
   useEffect(() => {
     if (seqError || isSeqTxError) {
+      console.error("[BatchTx] Sequential error:", seqError, "isSeqTxError:", isSeqTxError);
       setError(seqError || new Error("Transaction failed"));
       setState("error");
       setPendingCalls(null);
@@ -174,27 +179,31 @@ export function useBatchedTransaction(): UseBatchedTransactionReturn {
 
       try {
         // Get the wallet client/provider
+        console.log("[BatchTx] Getting connector client...");
         const client = await getConnectorClient(config);
+        console.log("[BatchTx] Got client:", client);
+
+        const batchParams = {
+          version: "2.0.0",
+          from: address,
+          chainId: numberToHex(DEFAULT_CHAIN_ID),
+          atomicRequired: true,
+          calls: calls.map((call) => ({
+            to: call.to,
+            data: call.data ?? "0x",
+            value: call.value ? numberToHex(call.value) : undefined,
+          })),
+        };
+        console.log("[BatchTx] Sending wallet_sendCalls with params:", JSON.stringify(batchParams, null, 2));
 
         // Use wallet_sendCalls directly with proper EIP-5792 parameters
         // This matches the Base Account SDK docs exactly
         const result = await client.request({
           method: "wallet_sendCalls",
-          params: [
-            {
-              version: "2.0.0",
-              from: address,
-              chainId: numberToHex(DEFAULT_CHAIN_ID),
-              atomicRequired: true,
-              calls: calls.map((call) => ({
-                to: call.to,
-                data: call.data ?? "0x",
-                value: call.value ? numberToHex(call.value) : undefined,
-              })),
-            },
-          ],
+          params: [batchParams],
         } as any);
 
+        console.log("[BatchTx] wallet_sendCalls result:", result);
         setIsBatchPending(false);
 
         // Result should be the batch ID for tracking
@@ -204,24 +213,14 @@ export function useBatchedTransaction(): UseBatchedTransactionReturn {
           setBatchId((result as { id: string }).id);
         }
       } catch (err: any) {
+        console.error("[BatchTx] Error:", err);
+        console.error("[BatchTx] Error message:", err?.message);
         setIsBatchPending(false);
 
-        // Check if we should fall back to sequential
-        const errorMessage = err?.message || String(err);
-        const shouldFallbackToSequential =
-          errorMessage.includes("wallet_sendCalls") ||
-          errorMessage.includes("does not exist") ||
-          errorMessage.includes("not available") ||
-          errorMessage.includes("MethodNotFound") ||
-          errorMessage.includes("insufficient allowance") ||
-          errorMessage.includes("would fail") ||
-          errorMessage.includes("simulation") ||
-          errorMessage.includes("revert") ||
-          errorMessage.includes("rejected") ||
-          errorMessage.includes("denied");
-
-        if (shouldFallbackToSequential && calls.length > 0) {
-          // Fall back to sequential transactions
+        // Always fall back to sequential for any error
+        // This ensures we try individual transactions if batching fails for any reason
+        if (calls.length > 0) {
+          console.log("[BatchTx] Falling back to sequential, sending first call...");
           isSequentialMode.current = true;
           const firstCall = calls[0];
           sendTransaction({
@@ -231,6 +230,7 @@ export function useBatchedTransaction(): UseBatchedTransactionReturn {
             chainId: DEFAULT_CHAIN_ID,
           });
         } else {
+          console.log("[BatchTx] No calls to fallback to, setting error state");
           setError(err);
           setState("error");
           setPendingCalls(null);
