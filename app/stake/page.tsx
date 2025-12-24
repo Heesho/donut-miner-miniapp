@@ -11,7 +11,7 @@ import {
   useWriteContract,
 } from "wagmi";
 import { base } from "wagmi/chains";
-import { encodeFunctionData, formatEther, formatUnits, parseUnits, zeroAddress, type Address } from "viem";
+import { formatEther, formatUnits, parseUnits, zeroAddress, type Address } from "viem";
 import { useBatchedTransaction, encodeApproveCall, encodeContractCall } from "@/hooks/useBatchedTransaction";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -241,7 +241,7 @@ export default function StakePage() {
     return voterData.accountUsedWeights === 0n;
   }, [voterData]);
 
-  // Batched transaction hook for stake (approve + stake)
+  // Batched transaction hook for stake (approve + stake in one atomic batch)
   const {
     execute: executeStakeBatch,
     state: stakeBatchState,
@@ -348,7 +348,7 @@ export default function StakePage() {
     }
   }, [resetVotesReceipt, refetchVoterData, resetResetVotes, showTxResult]);
 
-  // Handle stake - uses batched transaction (approve + stake)
+  // Handle stake - uses batched transaction (approve + stake in one atomic batch)
   const handleStake = useCallback(async () => {
     if (!address || parsedAmount === 0n) return;
     setTxStep("staking");
@@ -361,7 +361,7 @@ export default function StakePage() {
         encodeApproveCall(
           CONTRACT_ADDRESSES.donut as Address,
           CONTRACT_ADDRESSES.governanceToken as Address,
-          parsedAmount * 2n
+          parsedAmount
         )
       );
     }
