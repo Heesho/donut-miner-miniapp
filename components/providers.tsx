@@ -2,7 +2,8 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { WagmiProvider } from "wagmi";
-import { ReactNode, useState } from "react";
+import { ReactNode, useState, useEffect } from "react";
+import { sdk } from "@farcaster/miniapp-sdk";
 import { wagmiConfig } from "@/lib/wagmi";
 
 type ProvidersProps = {
@@ -10,6 +11,10 @@ type ProvidersProps = {
 };
 
 export function Providers({ children }: ProvidersProps) {
+  useEffect(() => {
+    sdk.actions.ready().catch(() => {});
+  }, []);
+
   const [queryClient] = useState(
     () =>
       new QueryClient({
