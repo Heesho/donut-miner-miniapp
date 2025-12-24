@@ -11,7 +11,7 @@ export const CONTRACT_ADDRESSES = {
   provider: "0xba366c82815983ff130c23ced78bd95e1f2c18ea",
 
   // LSG (Liquid Signal Governance) contracts
-  dao: "0x2236f324Bd357E8b06f3e43ffDE75A0b89E75A6e",
+  dao: "0x690C2e187c8254a887B35C0B4477ce6787F92855",
   governanceToken: "0xC78B6e362cB0f48b59E573dfe7C99d92153a16d3", // gDONUT
   voter: "0x9C5Cf3246d7142cdAeBBD5f653d95ACB73DdabA6",
   revenueRouter: "0x4799CBe9782265C0633d24c7311dD029090dED33",

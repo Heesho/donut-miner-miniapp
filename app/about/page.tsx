@@ -100,7 +100,7 @@ export default function AboutPage() {
           <div className="mt-3 space-y-4 overflow-y-auto scrollbar-hide flex-1">
             <div className="grid grid-cols-2 gap-2">
               <a
-                href="https://zapper.xyz/account/0x2236f324bd357e8b06f3e43ffde75a0b89e75a6e"
+                href="https://zapper.xyz/account/0x690C2e187c8254a887B35C0B4477ce6787F92855"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-center gap-2 rounded-xl border border-zinc-800 bg-gradient-to-br from-zinc-950 to-black px-4 py-3 text-sm font-bold text-white hover:border-pink-500/50 transition-colors"
