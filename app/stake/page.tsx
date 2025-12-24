@@ -421,9 +421,18 @@ export default function StakePage() {
   const handleStake = useCallback(async () => {
     if (!address || parsedAmount === 0n) return;
 
+    console.log("[Stake] handleStake called");
+    console.log("[Stake] address:", address);
+    console.log("[Stake] parsedAmount:", parsedAmount.toString());
+    console.log("[Stake] donutAllowance:", donutAllowance?.toString());
+    console.log("[Stake] needsApproval:", needsApproval);
+    console.log("[Stake] DONUT contract:", CONTRACT_ADDRESSES.donut);
+    console.log("[Stake] GovernanceToken contract:", CONTRACT_ADDRESSES.governanceToken);
+
     if (needsApproval) {
       // Need approval first - approve then stake
-      console.log("[Stake] Starting approval for amount:", parsedAmount.toString());
+      console.log("[Stake] Sending APPROVE transaction to DONUT contract");
+      console.log("[Stake] Approve args: spender=", CONTRACT_ADDRESSES.governanceToken, "amount=", parsedAmount.toString());
       setTxStep("approving");
       setPendingStakeAmount(parsedAmount);
       writeApprove({
@@ -435,7 +444,7 @@ export default function StakePage() {
       });
     } else {
       // No approval needed - stake directly
-      console.log("[Stake] No approval needed, staking directly:", parsedAmount.toString());
+      console.log("[Stake] No approval needed, sending STAKE transaction directly");
       setTxStep("staking");
       writeStake({
         address: CONTRACT_ADDRESSES.governanceToken as Address,
@@ -445,7 +454,7 @@ export default function StakePage() {
         chainId: base.id,
       });
     }
-  }, [address, parsedAmount, needsApproval, writeApprove, writeStake]);
+  }, [address, parsedAmount, donutAllowance, needsApproval, writeApprove, writeStake]);
 
   // Handle unstake
   const handleUnstake = useCallback(async () => {
