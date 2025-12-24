@@ -7,9 +7,9 @@ import {
   useConnect,
   useReadContract,
 } from "wagmi";
-import { useSendCalls, useCallsStatus } from "wagmi/experimental";
 import { base } from "wagmi/chains";
-import { encodeFunctionData, formatEther, formatUnits, zeroAddress, type Address } from "viem";
+import { formatEther, formatUnits, zeroAddress, type Address } from "viem";
+import { useBatchedTransaction, encodeApproveCall, encodeContractCall } from "@/hooks/useBatchedTransaction";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -245,93 +245,69 @@ export default function AuctionsPage() {
     return (allowance as bigint) < selectedStrategyData.currentPrice;
   }, [selectedStrategyData, allowance]);
 
-  // Batched transaction hooks for buy (approve + buy in one tx)
+  // Batched transaction hook for buy (approve + buy)
   const {
-    data: buyCallsId,
-    sendCalls: sendBuyCalls,
-    isPending: isBuyCallsPending,
-    reset: resetBuyCalls,
-  } = useSendCalls();
-
-  // Track batched buy transaction status
-  const { data: buyCallsStatus } = useCallsStatus({
-    id: buyCallsId?.id ?? "",
-    query: {
-      enabled: !!buyCallsId?.id,
-      refetchInterval: (data) =>
-        data.state.data?.status === "success" ? false : 1000,
-    },
-  });
+    execute: executeBuyBatch,
+    state: buyBatchState,
+    reset: resetBuyBatch,
+  } = useBatchedTransaction();
 
   // Handle batched buy completion
   useEffect(() => {
-    if (buyCallsStatus?.status === "success") {
+    if (buyBatchState === "success") {
       showBuyResult("success");
       refetchStrategies();
       refetchAllowance();
       setTxStep("idle");
-      resetBuyCalls();
+      resetBuyBatch();
       setSelectedStrategy(null);
-    } else if (buyCallsStatus?.status === "failure") {
+    } else if (buyBatchState === "error") {
       showBuyResult("failure");
       setTxStep("idle");
-      resetBuyCalls();
+      resetBuyBatch();
     }
-  }, [buyCallsStatus, refetchStrategies, refetchAllowance, resetBuyCalls, showBuyResult]);
+  }, [buyBatchState, refetchStrategies, refetchAllowance, resetBuyBatch, showBuyResult]);
 
-  // Handle buy - batched approve + buy in single transaction
+  // Handle buy - batched approve + buy
   const handleBuy = useCallback(async () => {
     if (!selectedStrategyData || !address) return;
     setTxStep("buying");
-    try {
-      // Build calls array - include approval if needed
-      const calls: Array<{ to: Address; data: `0x${string}` }> = [];
 
-      // Add approval call if needed
-      if (needsApproval) {
-        const approveData = encodeFunctionData({
-          abi: ERC20_ABI,
-          functionName: "approve",
-          args: [CONTRACT_ADDRESSES.lsgMulticall as Address, selectedStrategyData.currentPrice * 2n],
-        });
-        calls.push({
-          to: selectedStrategyData.paymentToken,
-          data: approveData,
-        });
-      }
+    const calls = [];
 
-      // Add buy call
-      const deadline = BigInt(Math.floor(Date.now() / 1000) + DEADLINE_BUFFER_SECONDS);
-      const maxPayment = (selectedStrategyData.currentPrice * 105n) / 100n; // 5% slippage
-      const buyData = encodeFunctionData({
-        abi: LSG_MULTICALL_ABI,
-        functionName: "distributeAndBuy",
-        args: [selectedStrategyData.strategy, selectedStrategyData.epochId, deadline, maxPayment],
-      });
-      calls.push({
-        to: CONTRACT_ADDRESSES.lsgMulticall as Address,
-        data: buyData,
-      });
-
-      // Send batched transaction
-      await sendBuyCalls({
-        calls,
-        chainId: base.id,
-      });
-    } catch (error) {
-      console.error("Buy failed:", error);
-      showBuyResult("failure");
-      setTxStep("idle");
+    // Add approval call if needed
+    if (needsApproval) {
+      calls.push(
+        encodeApproveCall(
+          selectedStrategyData.paymentToken,
+          CONTRACT_ADDRESSES.lsgMulticall as Address,
+          selectedStrategyData.currentPrice * 2n
+        )
+      );
     }
-  }, [address, selectedStrategyData, needsApproval, showBuyResult, sendBuyCalls]);
+
+    // Add buy call
+    const deadline = BigInt(Math.floor(Date.now() / 1000) + DEADLINE_BUFFER_SECONDS);
+    const maxPayment = (selectedStrategyData.currentPrice * 105n) / 100n; // 5% slippage
+    calls.push(
+      encodeContractCall(
+        CONTRACT_ADDRESSES.lsgMulticall as Address,
+        LSG_MULTICALL_ABI,
+        "distributeAndBuy",
+        [selectedStrategyData.strategy, selectedStrategyData.epochId, deadline, maxPayment]
+      )
+    );
+
+    await executeBuyBatch(calls);
+  }, [address, selectedStrategyData, needsApproval, executeBuyBatch]);
 
   const userDisplayName = context?.user?.displayName ?? context?.user?.username ?? "Farcaster user";
   const userHandle = context?.user?.username ? `@${context.user.username}` : context?.user?.fid ? `fid ${context.user.fid}` : "";
   const userAvatarUrl = context?.user?.pfpUrl ?? null;
 
   const isLoading = !strategiesData.length;
-  const isBuyConfirming = buyCallsStatus?.status === "pending";
-  const isBusy = txStep !== "idle" || isBuyCallsPending || isBuyConfirming;
+  const isBuying = buyBatchState === "pending" || buyBatchState === "confirming";
+  const isBusy = txStep !== "idle" || isBuying;
 
   return (
     <main className="flex h-screen w-screen justify-center overflow-hidden bg-black font-mono text-white">
@@ -513,7 +489,7 @@ export default function AuctionsPage() {
             >
               {buyResult === "success" ? "SUCCESS!" :
                buyResult === "failure" ? "FAILED" :
-               txStep === "buying" || isBuyConfirming ? "BUYING..." :
+               txStep === "buying" || isBuying ? "BUYING..." :
                "BUY AUCTION"}
             </Button>
           </div>

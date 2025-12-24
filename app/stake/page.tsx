@@ -10,9 +10,9 @@ import {
   useWaitForTransactionReceipt,
   useWriteContract,
 } from "wagmi";
-import { useSendCalls, useCallsStatus } from "wagmi/experimental";
 import { base } from "wagmi/chains";
 import { encodeFunctionData, formatEther, formatUnits, parseUnits, zeroAddress, type Address } from "viem";
+import { useBatchedTransaction, encodeApproveCall, encodeContractCall } from "@/hooks/useBatchedTransaction";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -241,25 +241,14 @@ export default function StakePage() {
     return voterData.accountUsedWeights === 0n;
   }, [voterData]);
 
-  // Batched transaction hooks for stake (approve + stake in one tx)
+  // Batched transaction hook for stake (approve + stake)
   const {
-    data: stakeCallsId,
-    sendCalls: sendStakeCalls,
-    isPending: isStakeCallsPending,
-    reset: resetStakeCalls,
-  } = useSendCalls();
+    execute: executeStakeBatch,
+    state: stakeBatchState,
+    reset: resetStakeBatch,
+  } = useBatchedTransaction();
 
-  // Track batched stake transaction status
-  const { data: stakeCallsStatus } = useCallsStatus({
-    id: stakeCallsId?.id ?? "",
-    query: {
-      enabled: !!stakeCallsId?.id,
-      refetchInterval: (data) =>
-        data.state.data?.status === "success" ? false : 1000,
-    },
-  });
-
-  // Regular write contract hooks for unstake and other operations
+  // Regular write hooks for unstake
   const {
     data: unstakeTxHash,
     writeContract: writeUnstake,
@@ -297,21 +286,21 @@ export default function StakePage() {
     chainId: base.id,
   });
 
-  // Handle batched stake completion
+  // Handle stake batch completion
   useEffect(() => {
-    if (stakeCallsStatus?.status === "success") {
+    if (stakeBatchState === "success") {
       showTxResult("success");
       refetchVoterData();
       refetchAllowance();
       setAmount("");
       setTxStep("idle");
-      resetStakeCalls();
-    } else if (stakeCallsStatus?.status === "failure") {
+      resetStakeBatch();
+    } else if (stakeBatchState === "error") {
       showTxResult("failure");
       setTxStep("idle");
-      resetStakeCalls();
+      resetStakeBatch();
     }
-  }, [stakeCallsStatus, refetchVoterData, refetchAllowance, resetStakeCalls, showTxResult]);
+  }, [stakeBatchState, refetchVoterData, refetchAllowance, resetStakeBatch, showTxResult]);
 
   // Handle unstake completion
   useEffect(() => {
@@ -359,49 +348,36 @@ export default function StakePage() {
     }
   }, [resetVotesReceipt, refetchVoterData, resetResetVotes, showTxResult]);
 
-  // Handle stake - batched approve + stake in single transaction
+  // Handle stake - uses batched transaction (approve + stake)
   const handleStake = useCallback(async () => {
     if (!address || parsedAmount === 0n) return;
     setTxStep("staking");
-    try {
-      // Build calls array - include approval if needed
-      const calls: Array<{ to: Address; data: `0x${string}` }> = [];
 
-      // Add approval call if needed
-      if (needsApproval) {
-        const approveData = encodeFunctionData({
-          abi: ERC20_ABI,
-          functionName: "approve",
-          args: [CONTRACT_ADDRESSES.governanceToken as Address, parsedAmount * 2n],
-        });
-        calls.push({
-          to: CONTRACT_ADDRESSES.donut as Address,
-          data: approveData,
-        });
-      }
+    const calls = [];
 
-      // Add stake call
-      const stakeData = encodeFunctionData({
-        abi: GOVERNANCE_TOKEN_ABI,
-        functionName: "stake",
-        args: [parsedAmount],
-      });
-      calls.push({
-        to: CONTRACT_ADDRESSES.governanceToken as Address,
-        data: stakeData,
-      });
-
-      // Send batched transaction
-      await sendStakeCalls({
-        calls,
-        chainId: base.id,
-      });
-    } catch (error) {
-      console.error("Stake failed:", error);
-      showTxResult("failure");
-      setTxStep("idle");
+    // Add approval call if needed
+    if (needsApproval) {
+      calls.push(
+        encodeApproveCall(
+          CONTRACT_ADDRESSES.donut as Address,
+          CONTRACT_ADDRESSES.governanceToken as Address,
+          parsedAmount * 2n
+        )
+      );
     }
-  }, [address, parsedAmount, needsApproval, showTxResult, sendStakeCalls]);
+
+    // Add stake call
+    calls.push(
+      encodeContractCall(
+        CONTRACT_ADDRESSES.governanceToken as Address,
+        GOVERNANCE_TOKEN_ABI,
+        "stake",
+        [parsedAmount]
+      )
+    );
+
+    await executeStakeBatch(calls);
+  }, [address, parsedAmount, needsApproval, executeStakeBatch]);
 
   // Handle unstake
   const handleUnstake = useCallback(async () => {
@@ -495,8 +471,8 @@ export default function StakePage() {
   const userHandle = context?.user?.username ? `@${context.user.username}` : context?.user?.fid ? `fid ${context.user.fid}` : "";
   const userAvatarUrl = context?.user?.pfpUrl ?? null;
 
-  const isStakeConfirming = stakeCallsStatus?.status === "pending";
-  const isBusy = txStep !== "idle" || isStakeCallsPending || isUnstakePending || isDelegatePending || isResetVotesPending || isStakeConfirming || isUnstakeConfirming || isDelegateConfirming || isResetVotesConfirming;
+  const isStaking = stakeBatchState === "pending" || stakeBatchState === "confirming";
+  const isBusy = txStep !== "idle" || isStaking || isUnstakePending || isDelegatePending || isResetVotesPending || isUnstakeConfirming || isDelegateConfirming || isResetVotesConfirming;
 
   const maxBalance = mode === "stake"
     ? voterData?.accountUnderlyingTokenBalance ?? 0n
@@ -690,7 +666,7 @@ export default function StakePage() {
           >
             {txResult === "success" ? "SUCCESS!" :
              txResult === "failure" ? "FAILED" :
-             txStep === "staking" || isStakeConfirming ? "STAKING..." :
+             txStep === "staking" || isStaking ? "STAKING..." :
              txStep === "unstaking" || isUnstakeConfirming ? "UNSTAKING..." :
              mode === "stake" ? "STAKE DONUT" : "UNSTAKE gDONUT"}
           </Button>
