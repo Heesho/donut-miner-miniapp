@@ -79,7 +79,7 @@ export default function AboutPage() {
         {/* Quick Links */}
         <div className="grid grid-cols-3 gap-2 mb-3">
           <a
-            href="https://zapper.xyz/account/0x690c2e187c8254a887b35c0b4477ce6787f92855"
+            href="https://debank.com/profile/0x690c2e187c8254a887b35c0b4477ce6787f92855"
             target="_blank"
             rel="noopener noreferrer"
           >

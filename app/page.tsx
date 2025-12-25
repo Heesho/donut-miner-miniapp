@@ -383,23 +383,23 @@ export default function HomePage() {
   return (
     <main className="flex min-h-screen w-full max-w-[430px] mx-auto flex-col bg-background font-mono text-foreground">
       <div
-        className="flex flex-1 flex-col px-4"
+        className="flex flex-1 flex-col px-3"
         style={{
-          paddingTop: "calc(env(safe-area-inset-top, 0px) + 16px)",
-          paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 80px)",
+          paddingTop: "calc(env(safe-area-inset-top, 0px) + 8px)",
+          paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 72px)",
         }}
       >
-        <div className="flex flex-1 flex-col gap-3 overflow-y-auto scrollbar-hide pb-4">
+        <div className="flex flex-1 flex-col gap-2 overflow-hidden">
           {/* Header */}
           <div className="flex items-center justify-between">
-            <h1 className="text-xl font-bold">Mine</h1>
+            <h1 className="text-lg font-bold">Mine</h1>
             {context?.user && (
-              <div className="flex items-center gap-2 rounded-full bg-secondary px-3 py-1.5">
-                <Avatar className="h-6 w-6">
+              <div className="flex items-center gap-1.5 rounded-full bg-secondary px-2 py-1">
+                <Avatar className="h-5 w-5">
                   <AvatarImage src={userAvatarUrl || undefined} alt={userDisplayName} />
-                  <AvatarFallback className="text-[10px]">{initialsFrom(userDisplayName)}</AvatarFallback>
+                  <AvatarFallback className="text-[8px]">{initialsFrom(userDisplayName)}</AvatarFallback>
                 </Avatar>
-                <span className="text-xs font-medium">{context.user.username || `fid:${context.user.fid}`}</span>
+                <span className="text-[10px] font-medium">{context.user.username || `fid:${context.user.fid}`}</span>
               </div>
             )}
           </div>
@@ -409,10 +409,10 @@ export default function HomePage() {
             "overflow-hidden",
             occupantDisplay.isYou && "border-primary/50 animate-border-glow"
           )}>
-            <CardContent className="p-3">
-              <div className="flex items-center justify-between gap-3">
+            <CardContent className="p-2">
+              <div className="flex items-center justify-between gap-2">
                 {/* Left: Profile */}
-                <div className="flex items-center gap-3 min-w-0 flex-1">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
                   <div
                     className={cn(
                       "cursor-pointer hover:opacity-80 transition-opacity",
@@ -420,7 +420,7 @@ export default function HomePage() {
                     )}
                     onClick={neynarUser?.user?.fid ? handleViewKingGlazerProfile : undefined}
                   >
-                    <Avatar className="h-10 w-10 ring-2 ring-primary/30">
+                    <Avatar className="h-9 w-9 ring-2 ring-primary/30">
                       <AvatarImage src={occupantDisplay.avatarUrl || undefined} alt={occupantDisplay.primary} />
                       <AvatarFallback>
                         {minerState ? occupantFallbackInitials : <CircleUserRound className="h-5 w-5" />}
@@ -441,21 +441,21 @@ export default function HomePage() {
                 </div>
 
                 {/* Right: Stats */}
-                <div className="flex flex-col gap-0.5 text-right shrink-0">
-                  <div className="text-[10px] text-muted-foreground">
+                <div className="flex flex-col text-right shrink-0">
+                  <div className="text-[9px] text-muted-foreground">
                     <span className="mr-1">TIME</span>
                     <span className="font-medium text-foreground">{glazeTimeDisplay}</span>
                   </div>
-                  <div className="text-[10px] text-muted-foreground flex items-center justify-end gap-1">
+                  <div className="text-[9px] text-muted-foreground flex items-center justify-end gap-0.5">
                     <span>GLAZED</span>
-                    <TokenIcon address={TOKEN_ADDRESSES.donut} size={10} />
+                    <TokenIcon address={TOKEN_ADDRESSES.donut} size={9} />
                     <span className="font-medium text-foreground">{glazedDisplay}</span>
                   </div>
-                  <div className="text-[10px] text-muted-foreground">
+                  <div className="text-[9px] text-muted-foreground">
                     <span className="mr-1">PNL</span>
                     <span className="font-medium text-foreground">{pnlData.pnlEth}</span>
                   </div>
-                  <div className={cn("text-xs font-bold", pnlData.isPositive ? "text-green-500" : "text-red-500")}>
+                  <div className={cn("text-[11px] font-bold", pnlData.isPositive ? "text-green-500" : "text-red-500")}>
                     {pnlData.totalUsd}
                   </div>
                 </div>
@@ -464,8 +464,8 @@ export default function HomePage() {
           </Card>
 
           {/* Scrolling Message */}
-          <div className="relative overflow-hidden bg-secondary/30 rounded-lg py-1">
-            <div className="flex animate-scroll whitespace-nowrap text-xs font-medium text-primary">
+          <div className="relative overflow-hidden bg-secondary/30 rounded py-0.5">
+            <div className="flex animate-scroll whitespace-nowrap text-[10px] font-medium text-primary">
               {Array.from({ length: 100 }).map((_, i) => (
                 <span key={i} className="inline-block px-6">
                   {minerState?.uri?.trim() || "We Glaze The World"}
@@ -475,10 +475,10 @@ export default function HomePage() {
           </div>
 
           {/* Video */}
-          <div className="relative overflow-hidden rounded-xl">
+          <div className="relative overflow-hidden rounded-lg">
             <video
               ref={videoRef}
-              className="w-full object-contain"
+              className="w-full object-cover"
               autoPlay
               loop
               muted={isMuted}
@@ -496,27 +496,27 @@ export default function HomePage() {
           </div>
 
           {/* Stats Grid */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2">
             <Card>
-              <CardContent className="p-3">
-                <div className="text-[10px] font-medium uppercase text-muted-foreground mb-1">Glaze Rate</div>
-                <div className="flex items-center gap-1.5">
-                  <TokenIcon address={TOKEN_ADDRESSES.donut} size={18} />
-                  <span className="text-lg font-bold">{glazeRateDisplay}</span>
-                  <span className="text-[10px] text-muted-foreground">/s</span>
+              <CardContent className="p-2">
+                <div className="text-[10px] font-medium uppercase text-muted-foreground">Glaze Rate</div>
+                <div className="flex items-center gap-1">
+                  <TokenIcon address={TOKEN_ADDRESSES.donut} size={16} />
+                  <span className="text-base font-bold">{glazeRateDisplay}</span>
+                  <span className="text-[9px] text-muted-foreground">/s</span>
                 </div>
-                <div className="text-[10px] text-muted-foreground">${glazeRateUsdValue}/s</div>
+                <div className="text-[9px] text-muted-foreground">${glazeRateUsdValue}/s</div>
               </CardContent>
             </Card>
             <Card className="border-primary/30">
-              <CardContent className="p-3">
-                <div className="text-[10px] font-medium uppercase text-muted-foreground mb-1">
+              <CardContent className="p-2">
+                <div className="text-[10px] font-medium uppercase text-muted-foreground">
                   Price
                 </div>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-lg font-bold text-primary">{glazePriceDisplay}</span>
+                <div className="flex items-baseline">
+                  <span className="text-base font-bold text-primary">{glazePriceDisplay}</span>
                 </div>
-                <div className="text-[10px] text-muted-foreground">
+                <div className="text-[9px] text-muted-foreground">
                   ${minerState ? (Number(formatEther(minerState.price)) * ethUsdPrice).toFixed(2) : "0.00"}
                 </div>
               </CardContent>
@@ -535,7 +535,7 @@ export default function HomePage() {
 
           {/* Mine Button */}
           <Button
-            size="lg"
+            size="default"
             className={cn(
               "w-full",
               glazeResult === "success" && "bg-green-600 hover:bg-green-600",
@@ -557,35 +557,25 @@ export default function HomePage() {
 
           {/* Balances */}
           <Card>
-            <CardContent className="p-3">
-              <div className="text-[10px] font-medium uppercase text-muted-foreground mb-2">Your Balances</div>
-              <div className="grid grid-cols-3 gap-3">
+            <CardContent className="p-2">
+              <div className="text-[10px] font-medium uppercase text-muted-foreground mb-1">Your Balances</div>
+              <div className="grid grid-cols-3 gap-2">
                 <div>
                   <div className="flex items-center gap-1 text-xs font-medium">
                     <TokenIcon address={TOKEN_ADDRESSES.donut} size={12} />
                     <span>{donutBalanceDisplay}</span>
                   </div>
-                  <div className="text-[10px] text-muted-foreground mt-1">Mined</div>
-                  <div className="flex items-center gap-1 text-xs font-medium">
-                    <TokenIcon address={TOKEN_ADDRESSES.donut} size={10} />
-                    <span>{accountData?.mined ? Number(accountData.mined).toLocaleString(undefined, { maximumFractionDigits: 2 }) : "0"}</span>
-                  </div>
+                  <div className="text-[10px] text-muted-foreground">Mined: {accountData?.mined ? Number(accountData.mined).toLocaleString(undefined, { maximumFractionDigits: 0 }) : "0"}</div>
                 </div>
                 <div>
                   <div className="text-xs font-medium">Ξ {ethBalanceDisplay}</div>
-                  <div className="text-[10px] text-muted-foreground mt-1">Spent</div>
-                  <div className="text-xs font-medium">
-                    Ξ {accountData?.spent ? Number(accountData.spent).toLocaleString(undefined, { maximumFractionDigits: 4 }) : "0"}
-                  </div>
+                  <div className="text-[10px] text-muted-foreground">Spent: {accountData?.spent ? Number(accountData.spent).toLocaleString(undefined, { maximumFractionDigits: 4 }) : "0"}</div>
                 </div>
                 <div>
                   <div className="text-xs font-medium">
                     wΞ {minerState?.wethBalance !== undefined ? formatEth(minerState.wethBalance, 4) : "—"}
                   </div>
-                  <div className="text-[10px] text-muted-foreground mt-1">Earned</div>
-                  <div className="text-xs font-medium">
-                    wΞ {accountData?.earned ? Number(accountData.earned).toLocaleString(undefined, { maximumFractionDigits: 4 }) : "0"}
-                  </div>
+                  <div className="text-[10px] text-muted-foreground">Earned: {accountData?.earned ? Number(accountData.earned).toLocaleString(undefined, { maximumFractionDigits: 4 }) : "0"}</div>
                 </div>
               </div>
             </CardContent>
