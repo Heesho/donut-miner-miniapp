@@ -255,15 +255,18 @@ export default function HomePage() {
       const price = minerState.price;
       const epochId = toBigInt(minerState.epochId);
       const deadline = BigInt(Math.floor(Date.now() / 1000) + DEADLINE_BUFFER_SECONDS);
-      const maxPrice = price === 0n ? 0n : (price * 105n) / 100n;
+
+      // 5% rebate when using own address as provider
+      const discountedPrice = (price * 95n) / 100n;
+      const maxPrice = discountedPrice === 0n ? 0n : (discountedPrice * 105n) / 100n;
 
       await writeContract({
         account: targetAddress as Address,
         address: CONTRACT_ADDRESSES.minerMulticall as Address,
         abi: MINER_MULTICALL_ABI,
         functionName: "mine",
-        args: [CONTRACT_ADDRESSES.provider as Address, epochId, deadline, maxPrice, customMessage.trim() || "We Glaze The World"],
-        value: price,
+        args: [targetAddress as Address, epochId, deadline, maxPrice, customMessage.trim() || "We Glaze The World"],
+        value: discountedPrice,
         chainId: base.id,
       });
     } catch (error) {
@@ -336,7 +339,8 @@ export default function HomePage() {
   }, [address, claimedHandleParam, context?.user, minerState, neynarUser?.user]);
 
   const glazeRateDisplay = minerState ? formatTokenAmount(minerState.nextDps, DONUT_DECIMALS, 4) : "—";
-  const glazePriceDisplay = minerState ? `Ξ${formatEth(minerState.price, minerState.price === 0n ? 0 : 5)}` : "Ξ—";
+  const discountedPrice = minerState ? (minerState.price * 95n) / 100n : 0n;
+  const glazePriceDisplay = minerState ? `Ξ${formatEth(discountedPrice, discountedPrice === 0n ? 0 : 5)}` : "Ξ—";
   const glazedDisplay = minerState && interpolatedGlazed !== null ? formatTokenAmount(interpolatedGlazed, DONUT_DECIMALS, 2) : "—";
   const glazeTimeDisplay = minerState ? formatGlazeTime(glazeElapsedSeconds) : "—";
 
@@ -502,7 +506,7 @@ export default function HomePage() {
                 <div className="text-[10px] font-medium uppercase text-muted-foreground">Glaze Rate</div>
                 <div className="flex items-center gap-1">
                   <TokenIcon address={TOKEN_ADDRESSES.donut} size={16} />
-                  <span className="text-base font-bold">{glazeRateDisplay}</span>
+                  <span className="text-base font-bold text-primary">{glazeRateDisplay}</span>
                   <span className="text-[9px] text-muted-foreground">/s</span>
                 </div>
                 <div className="text-[9px] text-muted-foreground">${glazeRateUsdValue}/s</div>
@@ -511,13 +515,16 @@ export default function HomePage() {
             <Card className="border-primary/30">
               <CardContent className="p-2">
                 <div className="text-[10px] font-medium uppercase text-muted-foreground">
-                  Price
+                  Glaze Price <span className="text-green-500">(5% Rebate)</span>
                 </div>
-                <div className="flex items-baseline">
-                  <span className="text-base font-bold text-primary">{glazePriceDisplay}</span>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-base font-bold text-green-500">{glazePriceDisplay}</span>
+                  <span className="text-xs text-muted-foreground line-through">
+                    Ξ{minerState ? formatEth(minerState.price, minerState.price === 0n ? 0 : 5) : "—"}
+                  </span>
                 </div>
                 <div className="text-[9px] text-muted-foreground">
-                  ${minerState ? (Number(formatEther(minerState.price)) * ethUsdPrice).toFixed(2) : "0.00"}
+                  ${minerState ? (Number(formatEther(discountedPrice)) * ethUsdPrice).toFixed(2) : "0.00"}
                 </div>
               </CardContent>
             </Card>

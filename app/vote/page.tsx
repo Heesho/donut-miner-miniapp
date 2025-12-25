@@ -494,13 +494,9 @@ export default function VotePage() {
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-[10px] text-muted-foreground uppercase">Rewards</div>
-                  {hasPendingRewards ? (
-                    <div className="text-sm font-bold text-green-500">
-                      ${totalPendingRewards.totalUsd.toFixed(2)}
-                    </div>
-                  ) : (
-                    <div className="text-sm text-muted-foreground">$0.00</div>
-                  )}
+                  <div className="text-sm font-bold">
+                    ${hasPendingRewards ? totalPendingRewards.totalUsd.toFixed(2) : "0.00"}
+                  </div>
                 </div>
                 <Button
                   size="sm"
@@ -598,9 +594,6 @@ export default function VotePage() {
                           hasCurrentVote && "bg-primary/5"
                         )}
                       >
-                        {/* Color dot */}
-                        {pieColor && <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: pieColor }} />}
-
                         {/* Token */}
                         {strategyData && <TokenIcon address={strategyData.paymentToken} size={24} />}
 
@@ -611,7 +604,7 @@ export default function VotePage() {
                             <span className="text-[10px] font-bold text-primary">{votePercent.toFixed(1)}%</span>
                           </div>
                           <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                            <span className={apr > 0 ? "text-green-500" : ""}>APR: {apr > 0 ? `${apr.toFixed(0)}%` : "—"}</span>
+                            <span>APR: <span className={apr > 0 ? "text-green-500 font-medium" : ""}>{apr > 0 ? `${apr.toFixed(0)}%` : "—"}</span></span>
                             <span>Earned: {userEarned > 0n ? formatTokenAmount(userEarned, earnedDecimals, 2) : "0"} {paymentSymbol}</span>
                           </div>
                         </div>
@@ -717,12 +710,6 @@ export default function VotePage() {
                   <><VoteIcon className="w-4 h-4" /> Vote</>
                 )}
               </Button>
-              {hasActiveVotes && (
-                <Button variant="outline" size="sm" className="w-full" onClick={handleReset} disabled={isBusy}>
-                  <RotateCcw className="w-3 h-3 mr-1" />
-                  {txStep === "resetting" || isResetConfirming ? "..." : "Reset Votes"}
-                </Button>
-              )}
             </>
           )}
         </div>
