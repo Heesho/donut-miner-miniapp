@@ -321,7 +321,7 @@ export default function AuctionsPage() {
           </div>
 
           {/* Auctions List */}
-          <div className="flex-1 overflow-y-auto scrollbar-hide space-y-3">
+          <div className="flex-1 overflow-y-auto scrollbar-hide space-y-2">
             {isLoading ? (
               <div className="flex items-center justify-center h-32">
                 <span className="text-sm text-muted-foreground">Loading auctions...</span>
@@ -356,140 +356,106 @@ export default function AuctionsPage() {
                     )}
                     onClick={() => setSelectedStrategy(isSelected ? null : strategy.strategy)}
                   >
-                    <CardContent className="p-3">
-                      <div className="grid grid-cols-2 gap-3">
-                        {/* You Pay */}
-                        <div className="bg-secondary/50 rounded-lg p-2.5">
-                          <div className="text-[10px] font-medium uppercase text-muted-foreground mb-1">You Pay</div>
-                          <div className="flex items-center gap-2">
-                            <TokenIcon address={strategy.paymentToken} size={20} />
-                            <span className="text-base font-bold text-primary">
-                              {formatTokenAmount(strategy.currentPrice, strategy.paymentTokenDecimals, 4)}
-                            </span>
-                          </div>
-                          <div className="text-[10px] text-muted-foreground mt-0.5">
-                            {paymentSymbol} {priceUsd > 0 && `(~$${priceUsd.toFixed(2)})`}
-                          </div>
-                        </div>
-
-                        {/* You Receive */}
-                        <div className={cn(
-                          "rounded-lg p-2.5",
-                          isProfitable ? "bg-green-500/10" : "bg-secondary/50"
-                        )}>
-                          <div className="text-[10px] font-medium uppercase text-muted-foreground mb-1">You Receive</div>
-                          <div className="flex items-center gap-2">
-                            <TokenIcon address={TOKEN_ADDRESSES.weth} size={20} />
-                            <span className="text-base font-bold">
-                              {formatEth(strategy.totalPotentialRevenue, 6)}
-                            </span>
-                          </div>
-                          <div className={cn(
-                            "text-[10px] mt-0.5",
-                            isProfitable ? "text-green-500" : "text-muted-foreground"
-                          )}>
-                            WETH (~${receiveUsd.toFixed(2)})
+                    <CardContent className="p-2.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <TokenIcon address={strategy.paymentToken} size={24} />
+                          <div>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-base font-bold text-primary">
+                                {formatTokenAmount(strategy.currentPrice, strategy.paymentTokenDecimals, 4)}
+                              </span>
+                              <span className="text-[10px] text-muted-foreground">{paymentSymbol}</span>
+                            </div>
+                            <div className="text-[10px] text-muted-foreground">
+                              ~${priceUsd.toFixed(2)} → ${receiveUsd.toFixed(2)} WETH
+                            </div>
                           </div>
                         </div>
+                        {isProfitable ? (
+                          <Badge variant="default" className="bg-green-600 text-[10px]">
+                            +${(receiveUsd - priceUsd).toFixed(2)}
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary" className="text-[10px] text-red-400">
+                            -${Math.abs(receiveUsd - priceUsd).toFixed(2)}
+                          </Badge>
+                        )}
                       </div>
-
-                      {isProfitable && (
-                        <Badge variant="default" className="mt-2 bg-green-600 text-[10px]">
-                          +${(receiveUsd - priceUsd).toFixed(2)} profit
-                        </Badge>
-                      )}
                     </CardContent>
                   </Card>
                 );
               })
             )}
           </div>
-
-          {/* Buy Panel */}
-          {selectedStrategyData && (() => {
-            const selectedPayUsd = getPaymentTokenUsdValue(
-              selectedStrategyData.currentPrice,
-              selectedStrategyData.paymentTokenDecimals,
-              selectedStrategyData.paymentToken,
-              ethUsdPrice,
-              lpTokenPrice,
-              donutPrice,
-              cbbtcPrice
-            );
-            const selectedReceiveUsd = Number(formatEther(selectedStrategyData.totalPotentialRevenue)) * ethUsdPrice;
-            const selectedIsProfitable = selectedPayUsd > 0 && selectedReceiveUsd > selectedPayUsd;
-            const profitOrLoss = selectedReceiveUsd - selectedPayUsd;
-            const selectedPaymentSymbol = getPaymentTokenSymbol(selectedStrategyData.paymentToken);
-            const hasBalance = selectedStrategyData.accountPaymentTokenBalance >= selectedStrategyData.currentPrice;
-
-            return (
-              <div className="space-y-3 pt-3 border-t border-border">
-                {/* Profitability */}
-                <Card className={cn(
-                  selectedIsProfitable ? "border-green-500/30 bg-green-500/5" : "border-red-500/30 bg-red-500/5"
-                )}>
-                  <CardContent className="p-3 text-center">
-                    <div className={cn(
-                      "text-xs",
-                      selectedIsProfitable ? "text-green-500" : "text-red-500"
-                    )}>
-                      {selectedIsProfitable ? (
-                        <>Receive <span className="font-bold">${selectedReceiveUsd.toFixed(2)}</span> for <span className="font-bold">${selectedPayUsd.toFixed(2)}</span> (+${profitOrLoss.toFixed(2)})</>
-                      ) : (
-                        <>Receive <span className="font-bold">${selectedReceiveUsd.toFixed(2)}</span> for <span className="font-bold">${selectedPayUsd.toFixed(2)}</span> (-${Math.abs(profitOrLoss).toFixed(2)})</>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Balance */}
-                <div className="flex justify-between items-center text-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="text-muted-foreground">Balance:</span>
-                    <TokenIcon address={selectedStrategyData.paymentToken} size={14} />
-                    <span className="font-medium">
-                      {formatTokenAmount(selectedStrategyData.accountPaymentTokenBalance, selectedStrategyData.paymentTokenDecimals, 4)}
-                    </span>
-                  </div>
-                  {!hasBalance && (
-                    <a
-                      href={`https://app.uniswap.org/swap?outputCurrency=${selectedStrategyData.paymentToken}&chain=base`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1 text-xs text-primary hover:underline"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      Get {selectedPaymentSymbol}
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
-                  )}
-                </div>
-
-                {/* Buy Button */}
-                <Button
-                  size="lg"
-                  className={cn(
-                    "w-full",
-                    buyResult === "success" && "bg-green-600 hover:bg-green-600",
-                    buyResult === "failure" && "bg-destructive hover:bg-destructive"
-                  )}
-                  onClick={handleBuy}
-                  disabled={isBusy || !hasBalance}
-                >
-                  {buyResult === "success" ? (
-                    <><Zap className="w-4 h-4" /> Success!</>
-                  ) : buyResult === "failure" ? (
-                    "Failed"
-                  ) : txStep === "buying" || isBuying ? (
-                    "Buying..."
-                  ) : (
-                    "Buy Auction"
-                  )}
-                </Button>
-              </div>
-            );
-          })()}
         </div>
+
+        {/* Buy Panel - Outside scroll area */}
+        {selectedStrategyData && (() => {
+          const selectedPayUsd = getPaymentTokenUsdValue(
+            selectedStrategyData.currentPrice,
+            selectedStrategyData.paymentTokenDecimals,
+            selectedStrategyData.paymentToken,
+            ethUsdPrice,
+            lpTokenPrice,
+            donutPrice,
+            cbbtcPrice
+          );
+          const selectedReceiveUsd = Number(formatEther(selectedStrategyData.totalPotentialRevenue)) * ethUsdPrice;
+          const selectedIsProfitable = selectedPayUsd > 0 && selectedReceiveUsd > selectedPayUsd;
+          const profitOrLoss = selectedReceiveUsd - selectedPayUsd;
+          const selectedPaymentSymbol = getPaymentTokenSymbol(selectedStrategyData.paymentToken);
+          const hasBalance = selectedStrategyData.accountPaymentTokenBalance >= selectedStrategyData.currentPrice;
+
+          return (
+            <div className="space-y-2 pt-2 border-t border-border">
+              {/* Balance row */}
+              <div className="flex justify-between items-center text-xs">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-muted-foreground">Balance:</span>
+                  <TokenIcon address={selectedStrategyData.paymentToken} size={12} />
+                  <span className="font-medium">
+                    {formatTokenAmount(selectedStrategyData.accountPaymentTokenBalance, selectedStrategyData.paymentTokenDecimals, 4)}
+                  </span>
+                </div>
+                {!hasBalance && (
+                  <a
+                    href={`https://app.uniswap.org/swap?outputCurrency=${selectedStrategyData.paymentToken}&chain=base`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-[10px] text-primary hover:underline"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    Get {selectedPaymentSymbol}
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                )}
+              </div>
+
+              {/* Buy Button */}
+              <Button
+                size="default"
+                className={cn(
+                  "w-full",
+                  buyResult === "success" && "bg-green-600 hover:bg-green-600",
+                  buyResult === "failure" && "bg-destructive hover:bg-destructive"
+                )}
+                onClick={handleBuy}
+                disabled={isBusy || !hasBalance}
+              >
+                {buyResult === "success" ? (
+                  <><Zap className="w-4 h-4" /> Success!</>
+                ) : buyResult === "failure" ? (
+                  "Failed"
+                ) : txStep === "buying" || isBuying ? (
+                  "Buying..."
+                ) : (
+                  <>Buy for ${selectedPayUsd.toFixed(2)} {selectedIsProfitable ? <span className="text-green-300">(+${profitOrLoss.toFixed(2)})</span> : <span className="text-red-300">(-${Math.abs(profitOrLoss).toFixed(2)})</span>}</>
+                )}
+              </Button>
+            </div>
+          );
+        })()}
       </div>
 
       <NavBar />
