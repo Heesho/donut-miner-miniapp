@@ -7,8 +7,6 @@ import {
   useAccount,
   useConnect,
   useReadContract,
-  useWriteContract,
-  useWaitForTransactionReceipt,
 } from "wagmi";
 import { base } from "wagmi/chains";
 import { formatEther, formatUnits, zeroAddress, type Address } from "viem";
@@ -28,6 +26,7 @@ import { NavBar } from "@/components/nav-bar";
 import { TokenIcon } from "@/components/token-icon";
 import { useEthPrice, useLpTokenPrice, useTokenPrice } from "@/hooks/useTokenPrices";
 import { TOKEN_ADDRESSES } from "@/lib/tokens";
+import { useBatchedTransaction, encodeApproveCall, encodeContractCall } from "@/hooks/useBatchedTransaction";
 
 type MiniAppContext = {
   user?: {
@@ -115,7 +114,7 @@ export default function AuctionsPage() {
   const [context, setContext] = useState<MiniAppContext | null>(null);
   const [selectedStrategy, setSelectedStrategy] = useState<Address | null>(null);
   const [buyResult, setBuyResult] = useState<"success" | "failure" | null>(null);
-  const [txStep, setTxStep] = useState<"idle" | "approving" | "ready_to_buy" | "buying" | "confirming">("idle");
+  const [txStep, setTxStep] = useState<"idle" | "buying">("idle");
 
   const { data: ethUsdPrice = 3500 } = useEthPrice();
   const { price: lpTokenPrice = 0 } = useLpTokenPrice(TOKEN_ADDRESSES.donutEthLp);
@@ -247,43 +246,26 @@ export default function AuctionsPage() {
     return (allowance as bigint) < selectedStrategyData.currentPrice;
   }, [selectedStrategyData, allowance]);
 
-  const {
-    data: txHash,
-    writeContract,
-    isPending: isWriting,
-    reset: resetWrite,
-  } = useWriteContract();
+  // Batched transaction hook for approve + buy in one transaction
+  const { execute: executeBatch, state: batchState, reset: resetBatch } = useBatchedTransaction();
 
-  const { data: receipt, isLoading: isConfirming } = useWaitForTransactionReceipt({
-    hash: txHash,
-    chainId: base.id,
-  });
-
+  // Handle batch transaction state changes
   useEffect(() => {
-    if (!receipt) return;
-    if (receipt.status === "success") {
-      if (txStep === "approving") {
-        // Approval succeeded, now proceed to buy
-        refetchAllowance();
-        resetWrite();
-        setTxStep("ready_to_buy");
-      } else if (txStep === "buying") {
-        // Buy succeeded
-        showBuyResult("success");
-        refetchStrategies();
-        refetchAllowance();
-        setTxStep("idle");
-        resetWrite();
-        setSelectedStrategy(null);
-      }
-    } else if (receipt.status === "reverted") {
+    if (batchState === "success") {
+      showBuyResult("success");
+      refetchStrategies();
+      refetchAllowance();
+      setTxStep("idle");
+      resetBatch();
+      setSelectedStrategy(null);
+    } else if (batchState === "error") {
       showBuyResult("failure");
       setTxStep("idle");
-      resetWrite();
+      resetBatch();
     }
-  }, [receipt, txStep, refetchStrategies, refetchAllowance, resetWrite, showBuyResult]);
+  }, [batchState, refetchStrategies, refetchAllowance, resetBatch, showBuyResult]);
 
-  const executeBuy = useCallback(async () => {
+  const handleBuy = useCallback(async () => {
     if (!selectedStrategyData || !address) return;
 
     const deadline = BigInt(Math.floor(Date.now() / 1000) + DEADLINE_BUFFER_SECONDS);
@@ -298,59 +280,34 @@ export default function AuctionsPage() {
     });
 
     setTxStep("buying");
-    try {
-      await writeContract({
-        address: CONTRACT_ADDRESSES.lsgMulticall as Address,
-        abi: LSG_MULTICALL_ABI,
-        functionName: "distributeAndBuy",
-        args: [selectedStrategyData.strategy, selectedStrategyData.epochId, deadline, maxPayment],
-        chainId: base.id,
-      });
-    } catch (error) {
-      console.error("Buy failed:", error);
-      showBuyResult("failure");
-      setTxStep("idle");
-    }
-  }, [address, selectedStrategyData, writeContract, showBuyResult]);
 
-  // Auto-trigger buy after approval succeeds
-  useEffect(() => {
-    if (txStep === "ready_to_buy") {
-      executeBuy();
-    }
-  }, [txStep, executeBuy]);
-
-  const handleBuy = useCallback(async () => {
-    if (!selectedStrategyData || !address) return;
-
+    const calls = [];
     if (needsApproval) {
-      setTxStep("approving");
-      try {
-        await writeContract({
-          address: selectedStrategyData.paymentToken,
-          abi: ERC20_ABI,
-          functionName: "approve",
-          args: [CONTRACT_ADDRESSES.lsgMulticall as Address, selectedStrategyData.currentPrice * 2n],
-          chainId: base.id,
-        });
-        // Wait for approval to complete, then executeBuy will be triggered via useEffect
-        return;
-      } catch (error) {
-        console.error("Approval failed:", error);
-        showBuyResult("failure");
-        setTxStep("idle");
-        return;
-      }
+      calls.push(
+        encodeApproveCall(
+          selectedStrategyData.paymentToken,
+          CONTRACT_ADDRESSES.lsgMulticall as Address,
+          selectedStrategyData.currentPrice * 2n
+        )
+      );
     }
+    calls.push(
+      encodeContractCall(
+        CONTRACT_ADDRESSES.lsgMulticall as Address,
+        LSG_MULTICALL_ABI,
+        "distributeAndBuy",
+        [selectedStrategyData.strategy, selectedStrategyData.epochId, deadline, maxPayment]
+      )
+    );
 
-    executeBuy();
-  }, [address, selectedStrategyData, needsApproval, writeContract, showBuyResult, executeBuy]);
+    await executeBatch(calls);
+  }, [address, selectedStrategyData, needsApproval, executeBatch]);
 
   const userDisplayName = context?.user?.displayName ?? context?.user?.username ?? "User";
   const userAvatarUrl = context?.user?.pfpUrl ?? null;
 
   const isLoading = !rawStrategiesData;
-  const isBusy = txStep !== "idle" || isWriting || isConfirming;
+  const isBusy = txStep !== "idle" || batchState === "pending" || batchState === "confirming";
 
   return (
     <main className="flex min-h-screen w-full max-w-[430px] mx-auto flex-col bg-background font-mono text-foreground">
@@ -518,9 +475,7 @@ export default function AuctionsPage() {
                   <><Zap className="w-4 h-4" /> Success!</>
                 ) : buyResult === "failure" ? (
                   "Failed"
-                ) : txStep === "approving" ? (
-                  "Approving..."
-                ) : txStep === "ready_to_buy" || txStep === "buying" || isWriting || isConfirming ? (
+                ) : isBusy ? (
                   "Buying..."
                 ) : (
                   <>Buy for ${selectedPayUsd.toFixed(2)} {selectedIsProfitable ? <span className="text-green-300">(+${profitOrLoss.toFixed(2)})</span> : <span className="text-red-300">(-${Math.abs(profitOrLoss).toFixed(2)})</span>}</>
