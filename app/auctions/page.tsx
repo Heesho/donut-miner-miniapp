@@ -115,7 +115,7 @@ export default function AuctionsPage() {
   const [context, setContext] = useState<MiniAppContext | null>(null);
   const [selectedStrategy, setSelectedStrategy] = useState<Address | null>(null);
   const [buyResult, setBuyResult] = useState<"success" | "failure" | null>(null);
-  const [txStep, setTxStep] = useState<"idle" | "approving" | "buying" | "confirming">("idle");
+  const [txStep, setTxStep] = useState<"idle" | "approving" | "ready_to_buy" | "buying" | "confirming">("idle");
 
   const { data: ethUsdPrice = 3500 } = useEthPrice();
   const { price: lpTokenPrice = 0 } = useLpTokenPrice(TOKEN_ADDRESSES.donutEthLp);
@@ -262,20 +262,28 @@ export default function AuctionsPage() {
   useEffect(() => {
     if (!receipt) return;
     if (receipt.status === "success") {
-      showBuyResult("success");
-      refetchStrategies();
-      refetchAllowance();
-      setTxStep("idle");
-      resetWrite();
-      setSelectedStrategy(null);
+      if (txStep === "approving") {
+        // Approval succeeded, now proceed to buy
+        refetchAllowance();
+        resetWrite();
+        setTxStep("ready_to_buy");
+      } else if (txStep === "buying") {
+        // Buy succeeded
+        showBuyResult("success");
+        refetchStrategies();
+        refetchAllowance();
+        setTxStep("idle");
+        resetWrite();
+        setSelectedStrategy(null);
+      }
     } else if (receipt.status === "reverted") {
       showBuyResult("failure");
       setTxStep("idle");
       resetWrite();
     }
-  }, [receipt, refetchStrategies, refetchAllowance, resetWrite, showBuyResult]);
+  }, [receipt, txStep, refetchStrategies, refetchAllowance, resetWrite, showBuyResult]);
 
-  const handleBuy = useCallback(async () => {
+  const executeBuy = useCallback(async () => {
     if (!selectedStrategyData || !address) return;
 
     const deadline = BigInt(Math.floor(Date.now() / 1000) + DEADLINE_BUFFER_SECONDS);
@@ -288,26 +296,6 @@ export default function AuctionsPage() {
       maxPayment: maxPayment.toString(),
       currentPrice: selectedStrategyData.currentPrice.toString(),
     });
-
-    if (needsApproval) {
-      setTxStep("approving");
-      try {
-        await writeContract({
-          address: selectedStrategyData.paymentToken,
-          abi: ERC20_ABI,
-          functionName: "approve",
-          args: [CONTRACT_ADDRESSES.lsgMulticall as Address, selectedStrategyData.currentPrice * 2n],
-          chainId: base.id,
-        });
-        // Wait for approval to complete before buying
-        return;
-      } catch (error) {
-        console.error("Approval failed:", error);
-        showBuyResult("failure");
-        setTxStep("idle");
-        return;
-      }
-    }
 
     setTxStep("buying");
     try {
@@ -323,7 +311,40 @@ export default function AuctionsPage() {
       showBuyResult("failure");
       setTxStep("idle");
     }
-  }, [address, selectedStrategyData, needsApproval, writeContract, showBuyResult]);
+  }, [address, selectedStrategyData, writeContract, showBuyResult]);
+
+  // Auto-trigger buy after approval succeeds
+  useEffect(() => {
+    if (txStep === "ready_to_buy") {
+      executeBuy();
+    }
+  }, [txStep, executeBuy]);
+
+  const handleBuy = useCallback(async () => {
+    if (!selectedStrategyData || !address) return;
+
+    if (needsApproval) {
+      setTxStep("approving");
+      try {
+        await writeContract({
+          address: selectedStrategyData.paymentToken,
+          abi: ERC20_ABI,
+          functionName: "approve",
+          args: [CONTRACT_ADDRESSES.lsgMulticall as Address, selectedStrategyData.currentPrice * 2n],
+          chainId: base.id,
+        });
+        // Wait for approval to complete, then executeBuy will be triggered via useEffect
+        return;
+      } catch (error) {
+        console.error("Approval failed:", error);
+        showBuyResult("failure");
+        setTxStep("idle");
+        return;
+      }
+    }
+
+    executeBuy();
+  }, [address, selectedStrategyData, needsApproval, writeContract, showBuyResult, executeBuy]);
 
   const userDisplayName = context?.user?.displayName ?? context?.user?.username ?? "User";
   const userAvatarUrl = context?.user?.pfpUrl ?? null;
@@ -499,7 +520,7 @@ export default function AuctionsPage() {
                   "Failed"
                 ) : txStep === "approving" ? (
                   "Approving..."
-                ) : txStep === "buying" || isWriting || isConfirming ? (
+                ) : txStep === "ready_to_buy" || txStep === "buying" || isWriting || isConfirming ? (
                   "Buying..."
                 ) : (
                   <>Buy for ${selectedPayUsd.toFixed(2)} {selectedIsProfitable ? <span className="text-green-300">(+${profitOrLoss.toFixed(2)})</span> : <span className="text-red-300">(-${Math.abs(profitOrLoss).toFixed(2)})</span>}</>
