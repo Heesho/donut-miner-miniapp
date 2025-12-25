@@ -15,7 +15,7 @@ export const CONTRACT_ADDRESSES = {
   governanceToken: "0xC78B6e362cB0f48b59E573dfe7C99d92153a16d3", // gDONUT
   voter: "0x9C5Cf3246d7142cdAeBBD5f653d95ACB73DdabA6",
   revenueRouter: "0x4799CBe9782265C0633d24c7311dD029090dED33",
-  lsgMulticall: "0xf2aB9afFf845d7f3883AE81A1Ff52EF7B8C4a663",
+  lsgMulticall: "0x19ceD08B532f81AfcF6c030F6eB53334105075F9",
 
 } as const;
 

@@ -575,9 +575,20 @@ export default function VotePage() {
                     const userEarned = paymentTokenIndex >= 0 ? bribe.accountRewardsEarned[paymentTokenIndex] : 0n;
                     const earnedDecimals = paymentTokenIndex >= 0 ? bribe.rewardTokenDecimals[paymentTokenIndex] : 18;
 
-                    const totalRewardsLeft = paymentTokenIndex >= 0 ? bribe.rewardsLeft[paymentTokenIndex] : 0n;
-                    const apr = bribe.totalSupply > 0n && totalRewardsLeft > 0n
-                      ? (Number(totalRewardsLeft) / Number(bribe.totalSupply)) * 52 * 100
+                    // Calculate APR using rewardsPerToken (rewards per vote per 7 days)
+                    // Sum up USD value of all reward tokens per vote
+                    let rewardsPerVoteUsd = 0;
+                    bribe.rewardTokens.forEach((token, i) => {
+                      const rewardsPerToken = bribe.rewardsPerToken[i] ?? 0n;
+                      const decimals = bribe.rewardTokenDecimals[i] ?? 18;
+                      const tokenAmount = Number(formatUnits(rewardsPerToken, decimals));
+                      const tokenPrice = getTokenUsdPrice(token);
+                      rewardsPerVoteUsd += tokenAmount * tokenPrice;
+                    });
+                    // 1 vote = 1 DONUT, so vote value in USD = donutPrice
+                    // APR = (weekly yield per vote / vote value) * 52 weeks * 100 for percentage
+                    const apr = donutPrice > 0
+                      ? (rewardsPerVoteUsd / donutPrice) * 52 * 100
                       : 0;
 
                     const userVotePercent = voterData && voterData.accountGovernanceTokenBalance > 0n
