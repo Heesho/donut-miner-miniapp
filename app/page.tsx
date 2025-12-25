@@ -387,23 +387,23 @@ export default function HomePage() {
   return (
     <main className="flex min-h-screen w-full max-w-[430px] mx-auto flex-col bg-background font-mono text-foreground">
       <div
-        className="flex flex-1 flex-col px-3"
+        className="flex flex-1 flex-col px-4"
         style={{
-          paddingTop: "calc(env(safe-area-inset-top, 0px) + 8px)",
-          paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 72px)",
+          paddingTop: "calc(env(safe-area-inset-top, 0px) + 16px)",
+          paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 80px)",
         }}
       >
         <div className="flex flex-1 flex-col gap-2 overflow-hidden">
           {/* Header */}
           <div className="flex items-center justify-between">
-            <h1 className="text-lg font-bold">Mine</h1>
+            <h1 className="text-xl font-bold">Mine</h1>
             {context?.user && (
-              <div className="flex items-center gap-1.5 rounded-full bg-secondary px-2 py-1">
-                <Avatar className="h-5 w-5">
+              <div className="flex items-center gap-2 rounded-full bg-secondary px-3 py-1.5">
+                <Avatar className="h-6 w-6">
                   <AvatarImage src={userAvatarUrl || undefined} alt={userDisplayName} />
-                  <AvatarFallback className="text-[8px]">{initialsFrom(userDisplayName)}</AvatarFallback>
+                  <AvatarFallback className="text-[10px]">{initialsFrom(userDisplayName)}</AvatarFallback>
                 </Avatar>
-                <span className="text-[10px] font-medium">{context.user.username || `fid:${context.user.fid}`}</span>
+                <span className="text-xs font-medium">{context.user.username || `fid:${context.user.fid}`}</span>
               </div>
             )}
           </div>
