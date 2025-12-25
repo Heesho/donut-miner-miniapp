@@ -266,7 +266,7 @@ export default function HomePage() {
         abi: MINER_MULTICALL_ABI,
         functionName: "mine",
         args: [targetAddress as Address, epochId, deadline, maxPrice, customMessage.trim() || "We Glaze The World"],
-        value: discountedPrice,
+        value: price,
         chainId: base.id,
       });
     } catch (error) {
