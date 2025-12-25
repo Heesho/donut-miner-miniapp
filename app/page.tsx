@@ -256,9 +256,7 @@ export default function HomePage() {
       const epochId = toBigInt(minerState.epochId);
       const deadline = BigInt(Math.floor(Date.now() / 1000) + DEADLINE_BUFFER_SECONDS);
 
-      // 5% rebate when using own address as provider
-      const discountedPrice = (price * 95n) / 100n;
-      const maxPrice = discountedPrice === 0n ? 0n : (discountedPrice * 105n) / 100n;
+      const maxPrice = price;
 
       await writeContract({
         account: targetAddress as Address,
