@@ -356,28 +356,43 @@ export default function AuctionsPage() {
                     )}
                     onClick={() => setSelectedStrategy(isSelected ? null : strategy.strategy)}
                   >
-                    <CardContent className="p-2.5">
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2">
-                          <TokenIcon address={strategy.paymentToken} size={24} />
-                          <div>
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-base font-bold text-primary">
-                                {formatTokenAmount(strategy.currentPrice, strategy.paymentTokenDecimals, 4)}
-                              </span>
-                              <span className="text-[10px] text-muted-foreground">{paymentSymbol}</span>
-                            </div>
-                            <div className="text-[10px] text-muted-foreground">
-                              ~${priceUsd.toFixed(2)} → ${receiveUsd.toFixed(2)} WETH
-                            </div>
+                    <CardContent className="p-2">
+                      <div className="flex items-center gap-2">
+                        {/* Pay */}
+                        <div className="flex-1 bg-secondary/50 rounded p-1.5">
+                          <div className="text-[9px] text-muted-foreground uppercase">Pay</div>
+                          <div className="flex items-center gap-1">
+                            <TokenIcon address={strategy.paymentToken} size={16} />
+                            <span className="text-sm font-bold text-primary">
+                              {formatTokenAmount(strategy.currentPrice, strategy.paymentTokenDecimals, 4)}
+                            </span>
                           </div>
+                          <div className="text-[9px] text-muted-foreground">${priceUsd.toFixed(2)}</div>
                         </div>
+                        {/* Receive */}
+                        <div className={cn(
+                          "flex-1 rounded p-1.5",
+                          isProfitable ? "bg-green-500/10" : "bg-secondary/50"
+                        )}>
+                          <div className="text-[9px] text-muted-foreground uppercase">Get</div>
+                          <div className="flex items-center gap-1">
+                            <TokenIcon address={TOKEN_ADDRESSES.weth} size={16} />
+                            <span className="text-sm font-bold">
+                              {formatEth(strategy.totalPotentialRevenue, 5)}
+                            </span>
+                          </div>
+                          <div className={cn(
+                            "text-[9px]",
+                            isProfitable ? "text-green-500" : "text-muted-foreground"
+                          )}>${receiveUsd.toFixed(2)}</div>
+                        </div>
+                        {/* Profit Badge */}
                         {isProfitable ? (
-                          <Badge variant="default" className="bg-green-600 text-[10px]">
+                          <Badge variant="default" className="bg-green-600 text-[9px] px-1.5">
                             +${(receiveUsd - priceUsd).toFixed(2)}
                           </Badge>
                         ) : (
-                          <Badge variant="secondary" className="text-[10px] text-red-400">
+                          <Badge variant="secondary" className="text-[9px] text-red-400 px-1.5">
                             -${Math.abs(receiveUsd - priceUsd).toFixed(2)}
                           </Badge>
                         )}
