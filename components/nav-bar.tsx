@@ -17,7 +17,7 @@ export function NavBar() {
       }}
     >
       <div className="flex justify-around items-center max-w-[520px] mx-auto px-2">
-        {/* Auctions (Home) */}
+        {/* Mine (Home) */}
         <Link
           href="/"
           className={cn(
@@ -27,20 +27,20 @@ export function NavBar() {
               : "text-gray-400 hover:text-gray-300"
           )}
         >
-          <Gavel className="w-6 h-6" />
+          <Pickaxe className="w-6 h-6" />
         </Link>
 
-        {/* Mine */}
+        {/* Auctions */}
         <Link
-          href="/mine"
+          href="/auctions"
           className={cn(
             "flex items-center justify-center p-3 transition-colors",
-            pathname === "/mine"
+            pathname === "/auctions"
               ? "text-pink-400"
               : "text-gray-400 hover:text-gray-300"
           )}
         >
-          <Pickaxe className="w-6 h-6" />
+          <Gavel className="w-6 h-6" />
         </Link>
 
         {/* Stake */}

@@ -3,8 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import { sdk } from "@farcaster/miniapp-sdk";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Card, CardContent } from "@/components/ui/card";
 import { NavBar } from "@/components/nav-bar";
-import { Wallet, BarChart3 } from "lucide-react";
+import { Wallet, BarChart3, ExternalLink, Vote } from "lucide-react";
 
 type MiniAppContext = {
   user?: {
@@ -33,17 +34,13 @@ export default function AboutPage() {
         const ctx = (await (sdk as unknown as {
           context: Promise<MiniAppContext> | MiniAppContext;
         }).context) as MiniAppContext;
-        if (!cancelled) {
-          setContext(ctx);
-        }
+        if (!cancelled) setContext(ctx);
       } catch {
         if (!cancelled) setContext(null);
       }
     };
     hydrateContext();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, []);
 
   useEffect(() => {
@@ -53,210 +50,163 @@ export default function AboutPage() {
     }
   }, []);
 
-  const userDisplayName =
-    context?.user?.displayName ?? context?.user?.username ?? "Farcaster user";
-  const userHandle = context?.user?.username
-    ? `@${context.user.username}`
-    : context?.user?.fid
-      ? `fid ${context.user.fid}`
-      : "";
+  const userDisplayName = context?.user?.displayName ?? context?.user?.username ?? "User";
   const userAvatarUrl = context?.user?.pfpUrl ?? null;
 
   return (
-    <main className="flex h-screen w-screen justify-center overflow-hidden bg-black font-mono text-white">
+    <main className="flex min-h-screen w-full max-w-[430px] mx-auto flex-col bg-background font-mono text-foreground">
       <div
-        className="relative flex h-full w-full max-w-[520px] flex-1 flex-col overflow-hidden rounded-[28px] bg-black px-2 pb-4 shadow-inner"
+        className="flex flex-col h-screen px-4"
         style={{
-          paddingTop: "calc(env(safe-area-inset-top, 0px) + 8px)",
+          paddingTop: "calc(env(safe-area-inset-top, 0px) + 16px)",
           paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 80px)",
         }}
       >
-        <div className="flex flex-1 flex-col overflow-hidden">
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold tracking-wide">ABOUT</h1>
-            {context?.user ? (
-              <div className="flex items-center gap-2 rounded-full bg-black px-3 py-1">
-                <Avatar className="h-8 w-8 border border-zinc-800">
-                  <AvatarImage
-                    src={userAvatarUrl || undefined}
-                    alt={userDisplayName}
-                    className="object-cover"
-                  />
-                  <AvatarFallback className="bg-zinc-800 text-white">
-                    {initialsFrom(userDisplayName)}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="leading-tight text-left">
-                  <div className="text-sm font-bold">{userDisplayName}</div>
-                  {userHandle ? (
-                    <div className="text-xs text-gray-400">{userHandle}</div>
-                  ) : null}
-                </div>
-              </div>
-            ) : null}
-          </div>
-
-          <div className="mt-3 space-y-4 overflow-y-auto scrollbar-hide flex-1">
-            <div className="grid grid-cols-2 gap-2">
-              <a
-                href="https://zapper.xyz/account/0x690C2e187c8254a887B35C0B4477ce6787F92855"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 rounded-xl border border-zinc-800 bg-gradient-to-br from-zinc-950 to-black px-4 py-3 text-sm font-bold text-white hover:border-pink-500/50 transition-colors"
-              >
-                <Wallet className="h-4 w-4 text-pink-400" />
-                Treasury
-              </a>
-              <a
-                href="https://dune.com/xyk/donut-company"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 rounded-xl border border-zinc-800 bg-gradient-to-br from-zinc-950 to-black px-4 py-3 text-sm font-bold text-white hover:border-pink-500/50 transition-colors"
-              >
-                <BarChart3 className="h-4 w-4 text-pink-400" />
-                Analytics
-              </a>
+        {/* Header */}
+        <div className="flex items-center justify-between mb-3">
+          <h1 className="text-xl font-bold">About</h1>
+          {context?.user && (
+            <div className="flex items-center gap-2 rounded-full bg-secondary px-3 py-1.5">
+              <Avatar className="h-6 w-6">
+                <AvatarImage src={userAvatarUrl || undefined} alt={userDisplayName} />
+                <AvatarFallback className="text-[10px]">{initialsFrom(userDisplayName)}</AvatarFallback>
+              </Avatar>
+              <span className="text-xs font-medium">{context.user.username || `fid:${context.user.fid}`}</span>
             </div>
+          )}
+        </div>
 
-            <section>
-              <h2 className="text-lg font-bold text-pink-400 mb-2">
-                What Is $DONUT
-              </h2>
-              <ul className="space-y-1 text-sm text-gray-300 list-disc list-inside">
+        {/* Quick Links */}
+        <div className="grid grid-cols-3 gap-2 mb-3">
+          <a
+            href="https://zapper.xyz/account/0x690c2e187c8254a887b35c0b4477ce6787f92855"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Card className="hover:border-primary/50 transition-colors">
+              <CardContent className="p-2 flex items-center justify-center gap-1.5">
+                <Wallet className="h-3.5 w-3.5 text-primary" />
+                <span className="text-xs font-medium">Portfolio</span>
+              </CardContent>
+            </Card>
+          </a>
+          <a
+            href="https://app.aragon.org/dao/base-mainnet/0x690C2e187c8254a887B35C0B4477ce6787F92855/dashboard"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Card className="hover:border-primary/50 transition-colors">
+              <CardContent className="p-2 flex items-center justify-center gap-1.5">
+                <Vote className="h-3.5 w-3.5 text-primary" />
+                <span className="text-xs font-medium">DAO</span>
+              </CardContent>
+            </Card>
+          </a>
+          <a
+            href="https://dune.com/xyk/donut-company"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Card className="hover:border-primary/50 transition-colors">
+              <CardContent className="p-2 flex items-center justify-center gap-1.5">
+                <BarChart3 className="h-3.5 w-3.5 text-primary" />
+                <span className="text-xs font-medium">Analytics</span>
+              </CardContent>
+            </Card>
+          </a>
+        </div>
+
+        {/* Scrollable Content */}
+        <Card className="flex-1 min-h-0">
+          <CardContent className="p-0 h-full flex flex-col">
+            <div className="flex-1 overflow-y-auto scrollbar-hide p-3 space-y-4">
+              <Section title="What Is $DONUT">
                 <li>$DONUT is a store-of-value token on Base</li>
                 <li>Mined through a continuous Dutch auction instead of proof-of-work or staking</li>
                 <li>Auction revenue increases $DONUT&apos;s liquidity and scarcity</li>
-              </ul>
-            </section>
+              </Section>
 
-            <section>
-              <h2 className="text-lg font-bold text-pink-400 mb-2">
-                How Mining Works
-              </h2>
-              <ul className="space-y-1 text-sm text-gray-300 list-disc list-inside">
+              <Section title="How Mining Works">
                 <li>Only one active miner at a time, called the King Glazer</li>
-                <li>The right to mine is bought with ETH through a continuous Dutch auction:</li>
-                <li className="pl-6 list-none">- Price doubles after each purchase</li>
-                <li className="pl-6 list-none">- Then decays to 0 over one hour</li>
-                <li className="pl-6 list-none">- Anyone can purchase control of emissions at the current price</li>
-              </ul>
-            </section>
+                <li>The right to mine is bought with ETH through a continuous Dutch auction</li>
+                <li>Price doubles after each purchase, then decays to 0 over one hour</li>
+                <li>Anyone can purchase control of emissions at the current price</li>
+              </Section>
 
-            <section>
-              <h2 className="text-lg font-bold text-pink-400 mb-2">
-                Revenue Split
-              </h2>
-              <ul className="space-y-1 text-sm text-gray-300 list-disc list-inside">
+              <Section title="Revenue Split">
                 <li>80% → previous King Glazer</li>
                 <li>15% → treasury</li>
                 <li>5% → provider (frontend host)</li>
-              </ul>
-            </section>
+              </Section>
 
-            <section>
-              <h2 className="text-lg font-bold text-pink-400 mb-2">
-                Emission Schedule
-              </h2>
-              <ul className="space-y-1 text-sm text-gray-300 list-disc list-inside">
+              <Section title="Emission Schedule">
                 <li>Starts at 4 DONUT / sec</li>
                 <li>Halving every 30 days</li>
                 <li>Tail emission: 0.01 DONUT / sec (forever)</li>
-              </ul>
-            </section>
+              </Section>
 
-            <section>
-              <h2 className="text-lg font-bold text-pink-400 mb-2">
-                Proof of Just-In-Time Stake
-              </h2>
-              <ul className="space-y-1 text-sm text-gray-300 list-disc list-inside">
+              <Section title="Proof of Just-In-Time Stake">
                 <li>ETH is &quot;staked&quot; only while controlling emissions</li>
                 <li>Profit if the next purchase pays more</li>
                 <li>Lose if it pays less</li>
                 <li>Earn $DONUT the entire time you hold control</li>
-              </ul>
-            </section>
+              </Section>
 
-            <section>
-              <h2 className="text-lg font-bold text-pink-400 mb-2">
-                Liquid Signal Governance (LSG)
-              </h2>
-              <ul className="space-y-1 text-sm text-gray-300 list-disc list-inside">
+              <Section title="Liquid Signal Governance (LSG)">
                 <li>A decentralized protocol for managing revenue allocation through liquid democracy</li>
                 <li>Token holders vote on strategies to determine how protocol revenue is distributed</li>
                 <li>No multisigs or hard-coded fee splits - voting power directly influences proportional distribution</li>
                 <li>Flexible strategies: buybacks, LP accumulation, treasury diversification, and more</li>
-              </ul>
-            </section>
+              </Section>
 
-            <section>
-              <h2 className="text-lg font-bold text-pink-400 mb-2">
-                Staking for Voting Power
-              </h2>
-              <ul className="space-y-1 text-sm text-gray-300 list-disc list-inside">
+              <Section title="Staking for Voting Power">
                 <li>Stake DONUT to receive gDONUT (1:1 ratio)</li>
                 <li>gDONUT is non-transferable - prevents flash loan attacks on governance</li>
                 <li>Delegate your voting power to yourself or another address</li>
                 <li>Must clear all votes before unstaking</li>
-              </ul>
-            </section>
+              </Section>
 
-            <section>
-              <h2 className="text-lg font-bold text-pink-400 mb-2">
-                Voting on Strategies
-              </h2>
-              <ul className="space-y-1 text-sm text-gray-300 list-disc list-inside">
+              <Section title="Voting on Strategies">
                 <li>Allocate your voting power across multiple strategies</li>
                 <li>Vote weights determine proportional revenue distribution</li>
                 <li>One epoch delay between voting and resetting (7 days)</li>
                 <li>Revenue flows through RevenueRouter to the Voter contract</li>
-              </ul>
-            </section>
+              </Section>
 
-            <section>
-              <h2 className="text-lg font-bold text-pink-400 mb-2">
-                Dutch Auctions
-              </h2>
-              <ul className="space-y-1 text-sm text-gray-300 list-disc list-inside">
+              <Section title="Dutch Auctions">
                 <li>Treasury WETH is sold via descending-price auctions</li>
                 <li>Price starts high and decays linearly toward zero over the epoch</li>
-                <li>Current strategies:</li>
-                <li className="pl-6 list-none">- DONUT Buyback: Pay DONUT, receive WETH</li>
-                <li className="pl-6 list-none">- DONUT-ETH LP: Pay LP tokens, receive WETH</li>
-                <li className="pl-6 list-none">- USDC Treasury: Pay USDC, receive WETH</li>
-                <li className="pl-6 list-none">- cbBTC Treasury: Pay cbBTC, receive WETH</li>
                 <li>Buy when the price is profitable for you!</li>
-              </ul>
-            </section>
+              </Section>
 
-            <section>
-              <h2 className="text-lg font-bold text-pink-400 mb-2">
-                Voter Incentives (Bribes)
-              </h2>
-              <ul className="space-y-1 text-sm text-gray-300 list-disc list-inside">
+              <Section title="Voter Incentives (Bribes)">
                 <li>20% of auction payments are routed to bribe contracts</li>
                 <li>Voters earn rewards proportional to their vote weight on each strategy</li>
                 <li>Claim accumulated rewards anytime on the Vote page</li>
                 <li>Creates sustainable incentives for governance participation</li>
-              </ul>
-            </section>
+              </Section>
 
-            <section className="pb-4">
-              <h2 className="text-lg font-bold text-pink-400 mb-2">
-                Builder Codes
-              </h2>
-              <ul className="space-y-1 text-sm text-gray-300 list-disc list-inside">
+              <Section title="Builder Codes">
                 <li>Anyone can host their own Donut Shop by deploying a frontend</li>
                 <li>Add your builder code to earn 5% of all purchases made through your shop</li>
-                <li>The protocol will launch with two official Donut Shops:</li>
-                <li className="pl-6 list-none">- GlazeCorp by @heesh</li>
-                <li className="pl-6 list-none">- Pinky Glazer by @bigbroc</li>
-              </ul>
-            </section>
-          </div>
-        </div>
+              </Section>
+            </div>
+          </CardContent>
+        </Card>
       </div>
+
       <NavBar />
     </main>
+  );
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <h2 className="text-sm font-bold text-primary mb-1.5">{title}</h2>
+      <ul className="space-y-0.5 text-xs text-muted-foreground list-disc list-inside">
+        {children}
+      </ul>
+    </div>
   );
 }

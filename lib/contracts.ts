@@ -8,7 +8,7 @@ export const CONTRACT_ADDRESSES = {
   // Mining contracts (original)
   miner: "0xF69614F4Ee8D4D3879dd53d5A039eB3114C794F6",
   minerMulticall: "0x3ec144554b484C6798A683E34c8e8E222293f323",
-  provider: "0xba366c82815983ff130c23ced78bd95e1f2c18ea",
+  provider: "0x3539bCcCA86de11575eB70997b136F9b30D21751",
 
   // LSG (Liquid Signal Governance) contracts
   dao: "0x690C2e187c8254a887B35C0B4477ce6787F92855",

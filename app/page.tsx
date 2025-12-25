@@ -1,29 +1,29 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { sdk } from "@farcaster/miniapp-sdk";
+import { CircleUserRound, Volume2, VolumeOff, Pickaxe, Zap } from "lucide-react";
 import {
   useAccount,
   useConnect,
   useReadContract,
+  useWaitForTransactionReceipt,
+  useWriteContract,
 } from "wagmi";
 import { base } from "wagmi/chains";
 import { formatEther, formatUnits, zeroAddress, type Address } from "viem";
-import { useBatchedTransaction, encodeApproveCall, encodeContractCall } from "@/hooks/useBatchedTransaction";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  CONTRACT_ADDRESSES,
-  LSG_MULTICALL_ABI,
-  ERC20_ABI,
-  PAYMENT_TOKEN_SYMBOLS,
-} from "@/lib/contracts";
-import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { CONTRACT_ADDRESSES, MINER_MULTICALL_ABI } from "@/lib/contracts";
+import { cn, getEthPrice } from "@/lib/utils";
+import { useAccountData } from "@/hooks/useAccountData";
 import { NavBar } from "@/components/nav-bar";
 import { TokenIcon } from "@/components/token-icon";
-import { useEthPrice, useLpTokenPrice, useTokenPrice } from "@/hooks/useTokenPrices";
 import { TOKEN_ADDRESSES } from "@/lib/tokens";
 
 type MiniAppContext = {
@@ -35,33 +35,27 @@ type MiniAppContext = {
   };
 };
 
-type StrategyData = {
-  strategy: Address;
-  bribe: Address;
-  bribeRouter: Address;
-  paymentToken: Address;
-  paymentReceiver: Address;
-  isAlive: boolean;
-  paymentTokenDecimals: number;
-  strategyWeight: bigint;
-  votePercent: bigint;
-  claimable: bigint;
-  pendingRevenue: bigint;
-  routerRevenue: bigint;
-  totalPotentialRevenue: bigint;
-  epochPeriod: bigint;
-  priceMultiplier: bigint;
-  minInitPrice: bigint;
-  epochId: bigint;
+type MinerState = {
+  epochId: bigint | number;
   initPrice: bigint;
-  startTime: bigint;
-  currentPrice: bigint;
-  revenueBalance: bigint;
-  accountVotes: bigint;
-  accountPaymentTokenBalance: bigint;
+  startTime: bigint | number;
+  glazed: bigint;
+  price: bigint;
+  dps: bigint;
+  nextDps: bigint;
+  donutPrice: bigint;
+  miner: Address;
+  uri: string;
+  ethBalance: bigint;
+  wethBalance: bigint;
+  donutBalance: bigint;
 };
 
+const DONUT_DECIMALS = 18;
 const DEADLINE_BUFFER_SECONDS = 15 * 60;
+
+const toBigInt = (value: bigint | number) =>
+  typeof value === "bigint" ? value : BigInt(value);
 
 const formatTokenAmount = (
   value: bigint,
@@ -73,9 +67,7 @@ const formatTokenAmount = (
   if (!Number.isFinite(asNumber)) {
     return formatUnits(value, decimals);
   }
-  return asNumber.toLocaleString(undefined, {
-    maximumFractionDigits,
-  });
+  return asNumber.toLocaleString(undefined, { maximumFractionDigits });
 };
 
 const formatEth = (value: bigint, maximumFractionDigits = 4) => {
@@ -84,9 +76,14 @@ const formatEth = (value: bigint, maximumFractionDigits = 4) => {
   if (!Number.isFinite(asNumber)) {
     return formatEther(value);
   }
-  return asNumber.toLocaleString(undefined, {
-    maximumFractionDigits,
-  });
+  return asNumber.toLocaleString(undefined, { maximumFractionDigits });
+};
+
+const formatAddress = (addr?: string) => {
+  if (!addr) return "—";
+  const normalized = addr.toLowerCase();
+  if (normalized === zeroAddress) return "No miner";
+  return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
 };
 
 const initialsFrom = (label?: string) => {
@@ -96,76 +93,44 @@ const initialsFrom = (label?: string) => {
   return stripped.slice(0, 2).toUpperCase();
 };
 
-// Get payment token symbol
-const getPaymentTokenSymbol = (address: Address): string => {
-  return PAYMENT_TOKEN_SYMBOLS[address.toLowerCase()] || "TOKEN";
+const formatGlazeTime = (seconds: number): string => {
+  if (seconds < 0) return "0s";
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+  if (hours > 0) return `${hours}h ${minutes}m ${secs}s`;
+  if (minutes > 0) return `${minutes}m ${secs}s`;
+  return `${secs}s`;
 };
 
-// Get USD value for payment token amount
-const getPaymentTokenUsdValue = (
-  amount: bigint,
-  decimals: number,
-  paymentToken: Address,
-  ethPrice: number,
-  lpPrice: number,
-  donutPrice: number,
-  cbbtcPrice: number
-): number => {
-  const tokenAmount = Number(formatUnits(amount, decimals));
-  const tokenLower = paymentToken.toLowerCase();
-
-  // USDC is ~$1
-  if (tokenLower === TOKEN_ADDRESSES.usdc.toLowerCase()) {
-    return tokenAmount;
-  }
-  // DONUT-ETH LP
-  if (tokenLower === TOKEN_ADDRESSES.donutEthLp.toLowerCase()) {
-    return tokenAmount * lpPrice;
-  }
-  // DONUT
-  if (tokenLower === TOKEN_ADDRESSES.donut.toLowerCase()) {
-    return tokenAmount * donutPrice;
-  }
-  // cbBTC
-  if (tokenLower === TOKEN_ADDRESSES.cbbtc.toLowerCase()) {
-    return tokenAmount * cbbtcPrice;
-  }
-  return 0;
-};
-
-export default function AuctionsPage() {
+export default function HomePage() {
   const readyRef = useRef(false);
   const autoConnectAttempted = useRef(false);
   const [context, setContext] = useState<MiniAppContext | null>(null);
-  const [selectedStrategy, setSelectedStrategy] = useState<Address | null>(null);
-  const [buyResult, setBuyResult] = useState<"success" | "failure" | null>(null);
-  const [txStep, setTxStep] = useState<"idle" | "approving" | "buying" | "confirming">("idle");
+  const [customMessage, setCustomMessage] = useState("");
+  const [ethUsdPrice, setEthUsdPrice] = useState<number>(3500);
+  const [glazeResult, setGlazeResult] = useState<"success" | "failure" | null>(null);
+  const [isMuted, setIsMuted] = useState(true);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const glazeResultTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Token prices
-  const { data: ethUsdPrice = 3500 } = useEthPrice();
-  const { price: lpTokenPrice } = useLpTokenPrice(TOKEN_ADDRESSES.donutEthLp);
-  const { data: donutPrice = 0 } = useTokenPrice(TOKEN_ADDRESSES.donut);
-  const { data: cbbtcPrice = 0 } = useTokenPrice(TOKEN_ADDRESSES.cbbtc);
-
-  const buyResultTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const showBuyResult = useCallback((result: "success" | "failure") => {
-    if (buyResultTimeoutRef.current) {
-      clearTimeout(buyResultTimeoutRef.current);
+  const resetGlazeResult = useCallback(() => {
+    if (glazeResultTimeoutRef.current) {
+      clearTimeout(glazeResultTimeoutRef.current);
+      glazeResultTimeoutRef.current = null;
     }
-    setBuyResult(result);
-    buyResultTimeoutRef.current = setTimeout(() => {
-      setBuyResult(null);
-      buyResultTimeoutRef.current = null;
-    }, 3000);
+    setGlazeResult(null);
   }, []);
 
-  useEffect(() => {
-    return () => {
-      if (buyResultTimeoutRef.current) {
-        clearTimeout(buyResultTimeoutRef.current);
-      }
-    };
+  const showGlazeResult = useCallback((result: "success" | "failure") => {
+    if (glazeResultTimeoutRef.current) {
+      clearTimeout(glazeResultTimeoutRef.current);
+    }
+    setGlazeResult(result);
+    glazeResultTimeoutRef.current = setTimeout(() => {
+      setGlazeResult(null);
+      glazeResultTimeoutRef.current = null;
+    }, 3000);
   }, []);
 
   useEffect(() => {
@@ -185,12 +150,29 @@ export default function AuctionsPage() {
   }, []);
 
   useEffect(() => {
+    return () => {
+      if (glazeResultTimeoutRef.current) {
+        clearTimeout(glazeResultTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     if (!readyRef.current) {
       readyRef.current = true;
       sdk.actions.ready().catch(() => {});
     }
   }, []);
 
+  useEffect(() => {
+    const fetchPrice = async () => {
+      const price = await getEthPrice();
+      setEthUsdPrice(price);
+    };
+    fetchPrice();
+    const interval = setInterval(fetchPrice, 60_000);
+    return () => clearInterval(interval);
+  }, []);
 
   const { address, isConnected } = useAccount();
   const { connectors, connectAsync, isPending: isConnecting } = useConnect();
@@ -202,300 +184,414 @@ export default function AuctionsPage() {
     connectAsync({ connector: primaryConnector, chainId: base.id }).catch(() => {});
   }, [connectAsync, isConnected, isConnecting, primaryConnector]);
 
-  // Fetch all strategies data
-  const { data: rawStrategiesData, refetch: refetchStrategies } = useReadContract({
-    address: CONTRACT_ADDRESSES.lsgMulticall as Address,
-    abi: LSG_MULTICALL_ABI,
-    functionName: "getAllStrategiesData",
+  const { data: rawMinerState, refetch: refetchMinerState } = useReadContract({
+    address: CONTRACT_ADDRESSES.minerMulticall,
+    abi: MINER_MULTICALL_ABI,
+    functionName: "getMiner",
     args: [address ?? zeroAddress],
     chainId: base.id,
-    query: { refetchInterval: 5_000 },
+    query: { refetchInterval: 3_000 },
   });
 
-  const strategiesData = useMemo(() => {
-    if (!rawStrategiesData) return [];
-    return (rawStrategiesData as unknown as StrategyData[]).filter(s => s.isAlive);
-  }, [rawStrategiesData]);
+  const minerState = useMemo(() => {
+    if (!rawMinerState) return undefined;
+    return rawMinerState as unknown as MinerState;
+  }, [rawMinerState]);
 
-  // Select first strategy by default when data loads
-  useEffect(() => {
-    if (strategiesData.length > 0 && !selectedStrategy) {
-      setSelectedStrategy(strategiesData[0].strategy);
-    }
-  }, [strategiesData, selectedStrategy]);
+  const { data: accountData } = useAccountData(address);
 
-  // Selected strategy details
-  const selectedStrategyData = useMemo(() => {
-    if (!selectedStrategy || !strategiesData.length) return null;
-    return strategiesData.find(s => s.strategy.toLowerCase() === selectedStrategy.toLowerCase()) || null;
-  }, [selectedStrategy, strategiesData]);
-
-  // Check allowance for selected strategy
-  const { data: allowance, refetch: refetchAllowance } = useReadContract({
-    address: selectedStrategyData?.paymentToken as Address,
-    abi: ERC20_ABI,
-    functionName: "allowance",
-    args: [address ?? zeroAddress, CONTRACT_ADDRESSES.lsgMulticall as Address],
-    chainId: base.id,
-    query: { enabled: !!selectedStrategyData && !!address },
-  });
-
-  const needsApproval = useMemo(() => {
-    if (!selectedStrategyData || !allowance) return true;
-    return (allowance as bigint) < selectedStrategyData.currentPrice;
-  }, [selectedStrategyData, allowance]);
-
-  // Batched transaction hook for buy (approve + buy)
   const {
-    execute: executeBuyBatch,
-    state: buyBatchState,
-    reset: resetBuyBatch,
-  } = useBatchedTransaction();
+    data: txHash,
+    writeContract,
+    isPending: isWriting,
+    reset: resetWrite,
+  } = useWriteContract();
 
-  // Handle batched buy completion
+  const { data: receipt, isLoading: isConfirming } = useWaitForTransactionReceipt({
+    hash: txHash,
+    chainId: base.id,
+  });
+
   useEffect(() => {
-    if (buyBatchState === "success") {
-      showBuyResult("success");
-      refetchStrategies();
-      refetchAllowance();
-      setTxStep("idle");
-      resetBuyBatch();
-      setSelectedStrategy(null);
-    } else if (buyBatchState === "error") {
-      showBuyResult("failure");
-      setTxStep("idle");
-      resetBuyBatch();
+    if (!receipt) return;
+    if (receipt.status === "success" || receipt.status === "reverted") {
+      showGlazeResult(receipt.status === "success" ? "success" : "failure");
+      refetchMinerState();
+      const resetTimer = setTimeout(() => resetWrite(), 500);
+      return () => clearTimeout(resetTimer);
     }
-  }, [buyBatchState, refetchStrategies, refetchAllowance, resetBuyBatch, showBuyResult]);
+  }, [receipt, refetchMinerState, resetWrite, showGlazeResult]);
 
-  // Handle buy - batched approve + buy
-  const handleBuy = useCallback(async () => {
-    if (!selectedStrategyData || !address) return;
-    setTxStep("buying");
+  const minerAddress = minerState?.miner ?? zeroAddress;
+  const hasMiner = minerAddress !== zeroAddress;
+  const claimedHandleParam = (minerState?.uri ?? "").trim();
 
-    const calls = [];
+  const { data: neynarUser } = useQuery<{
+    user: { fid: number | null; username: string | null; displayName: string | null; pfpUrl: string | null } | null;
+  }>({
+    queryKey: ["neynar-user", minerAddress],
+    queryFn: async () => {
+      const res = await fetch(`/api/neynar/user?address=${encodeURIComponent(minerAddress)}`);
+      if (!res.ok) throw new Error("Failed to load Farcaster profile.");
+      return res.json();
+    },
+    enabled: hasMiner,
+    staleTime: 60_000,
+    retry: false,
+  });
 
-    // Add approval call if needed
-    if (needsApproval) {
-      calls.push(
-        encodeApproveCall(
-          selectedStrategyData.paymentToken,
-          CONTRACT_ADDRESSES.lsgMulticall as Address,
-          selectedStrategyData.currentPrice * 2n
-        )
-      );
+  const handleGlaze = useCallback(async () => {
+    if (!minerState) return;
+    resetGlazeResult();
+    try {
+      let targetAddress = address;
+      if (!targetAddress) {
+        if (!primaryConnector) throw new Error("Wallet connector not available yet.");
+        const result = await connectAsync({ connector: primaryConnector, chainId: base.id });
+        targetAddress = result.accounts[0];
+      }
+      if (!targetAddress) throw new Error("Unable to determine wallet address.");
+
+      const price = minerState.price;
+      const epochId = toBigInt(minerState.epochId);
+      const deadline = BigInt(Math.floor(Date.now() / 1000) + DEADLINE_BUFFER_SECONDS);
+      const maxPrice = price === 0n ? 0n : (price * 105n) / 100n;
+
+      await writeContract({
+        account: targetAddress as Address,
+        address: CONTRACT_ADDRESSES.minerMulticall as Address,
+        abi: MINER_MULTICALL_ABI,
+        functionName: "mine",
+        args: [CONTRACT_ADDRESSES.provider as Address, epochId, deadline, maxPrice, customMessage.trim() || "We Glaze The World"],
+        value: price,
+        chainId: base.id,
+      });
+    } catch (error) {
+      console.error("Failed to glaze:", error);
+      showGlazeResult("failure");
+      resetWrite();
     }
+  }, [address, connectAsync, customMessage, minerState, primaryConnector, resetGlazeResult, resetWrite, showGlazeResult, writeContract]);
 
-    // Add buy call
-    const deadline = BigInt(Math.floor(Date.now() / 1000) + DEADLINE_BUFFER_SECONDS);
-    const maxPayment = (selectedStrategyData.currentPrice * 105n) / 100n; // 5% slippage
-    calls.push(
-      encodeContractCall(
-        CONTRACT_ADDRESSES.lsgMulticall as Address,
-        LSG_MULTICALL_ABI,
-        "distributeAndBuy",
-        [selectedStrategyData.strategy, selectedStrategyData.epochId, deadline, maxPayment]
-      )
-    );
+  const [interpolatedGlazed, setInterpolatedGlazed] = useState<bigint | null>(null);
+  const [glazeElapsedSeconds, setGlazeElapsedSeconds] = useState<number>(0);
 
-    await executeBuyBatch(calls);
-  }, [address, selectedStrategyData, needsApproval, executeBuyBatch]);
+  useEffect(() => {
+    if (!minerState) {
+      setInterpolatedGlazed(null);
+      return;
+    }
+    setInterpolatedGlazed(minerState.glazed);
+    const interval = setInterval(() => {
+      if (minerState.nextDps > 0n) {
+        setInterpolatedGlazed((prev) => (prev ? prev + minerState.nextDps : minerState.glazed));
+      }
+    }, 1_000);
+    return () => clearInterval(interval);
+  }, [minerState]);
 
-  const userDisplayName = context?.user?.displayName ?? context?.user?.username ?? "Farcaster user";
-  const userHandle = context?.user?.username ? `@${context.user.username}` : context?.user?.fid ? `fid ${context.user.fid}` : "";
+  useEffect(() => {
+    if (!minerState) {
+      setGlazeElapsedSeconds(0);
+      return;
+    }
+    const startTimeSeconds = Number(minerState.startTime);
+    const initialElapsed = Math.floor(Date.now() / 1000) - startTimeSeconds;
+    setGlazeElapsedSeconds(initialElapsed);
+    const interval = setInterval(() => {
+      setGlazeElapsedSeconds(Math.floor(Date.now() / 1000) - startTimeSeconds);
+    }, 1_000);
+    return () => clearInterval(interval);
+  }, [minerState]);
+
+  const occupantDisplay = useMemo(() => {
+    if (!minerState) {
+      return { primary: "—", secondary: "", isYou: false, avatarUrl: null as string | null, isUnknown: true, addressLabel: "—" };
+    }
+    const minerAddr = minerState.miner;
+    const fallback = formatAddress(minerAddr);
+    const isYou = !!address && minerAddr.toLowerCase() === (address as string).toLowerCase();
+    const fallbackAvatarUrl = `https://api.dicebear.com/7.x/shapes/svg?seed=${encodeURIComponent(minerAddr.toLowerCase())}`;
+    const profile = neynarUser?.user ?? null;
+    const profileUsername = profile?.username ? `@${profile.username}` : null;
+    const profileDisplayName = profile?.displayName ?? null;
+    const contextProfile = context?.user ?? null;
+    const contextHandle = contextProfile?.username ? `@${contextProfile.username}` : null;
+    const contextDisplayName = contextProfile?.displayName ?? null;
+    const claimedHandle = claimedHandleParam ? (claimedHandleParam.startsWith("@") ? claimedHandleParam : `@${claimedHandleParam}`) : null;
+    const addressLabel = fallback;
+    const labelCandidates = [profileDisplayName, profileUsername, isYou ? contextDisplayName : null, isYou ? contextHandle : null, addressLabel].filter((label): label is string => !!label);
+    const seenLabels = new Set<string>();
+    const uniqueLabels = labelCandidates.filter((label) => {
+      const key = label.toLowerCase();
+      if (seenLabels.has(key)) return false;
+      seenLabels.add(key);
+      return true;
+    });
+    const primary = uniqueLabels[0] ?? addressLabel;
+    const secondary = uniqueLabels.find((label) => label !== primary && label.startsWith("@")) ?? "";
+    const avatarUrl = profile?.pfpUrl ?? (isYou ? contextProfile?.pfpUrl ?? null : null) ?? fallbackAvatarUrl;
+    const isUnknown = !profile && !claimedHandle && !(isYou && (contextHandle || contextDisplayName));
+    return { primary, secondary, isYou, avatarUrl, isUnknown, addressLabel };
+  }, [address, claimedHandleParam, context?.user, minerState, neynarUser?.user]);
+
+  const glazeRateDisplay = minerState ? formatTokenAmount(minerState.nextDps, DONUT_DECIMALS, 4) : "—";
+  const glazePriceDisplay = minerState ? `Ξ${formatEth(minerState.price, minerState.price === 0n ? 0 : 5)}` : "Ξ—";
+  const glazedDisplay = minerState && interpolatedGlazed !== null ? formatTokenAmount(interpolatedGlazed, DONUT_DECIMALS, 2) : "—";
+  const glazeTimeDisplay = minerState ? formatGlazeTime(glazeElapsedSeconds) : "—";
+
+  const glazedUsdValue = minerState && minerState.donutPrice > 0n && interpolatedGlazed !== null
+    ? (Number(formatEther(interpolatedGlazed)) * Number(formatEther(minerState.donutPrice)) * ethUsdPrice).toFixed(2)
+    : "0.00";
+
+  const glazeRateUsdValue = minerState && minerState.donutPrice > 0n
+    ? (Number(formatUnits(minerState.nextDps, DONUT_DECIMALS)) * Number(formatEther(minerState.donutPrice)) * ethUsdPrice).toFixed(4)
+    : "0.0000";
+
+  const pnlData = useMemo(() => {
+    if (!minerState) return { pnlEth: "Ξ0", pnlUsd: "$0.00", totalUsd: "$0.00", isPositive: true };
+    const pnl = (minerState.price * 80n) / 100n - minerState.initPrice / 2n;
+    const isPositive = pnl >= 0n;
+    const absolutePnl = isPositive ? pnl : -pnl;
+    const pnlEth = `${isPositive ? "+" : "-"}Ξ${formatEth(absolutePnl, 5)}`;
+    const pnlEthNum = Number(formatEther(absolutePnl)) * (isPositive ? 1 : -1);
+    const pnlUsdNum = pnlEthNum * ethUsdPrice;
+    const pnlUsd = `${pnlUsdNum >= 0 ? "+" : ""}$${Math.abs(pnlUsdNum).toFixed(2)}`;
+    const glazedUsd = Number(glazedUsdValue);
+    const totalNum = glazedUsd + pnlUsdNum;
+    const totalUsd = `${totalNum >= 0 ? "+" : ""}$${Math.abs(totalNum).toFixed(2)}`;
+    return { pnlEth, pnlUsd, totalUsd, isPositive: totalNum >= 0 };
+  }, [minerState, ethUsdPrice, glazedUsdValue]);
+
+  const occupantInitialsSource = occupantDisplay.isUnknown ? occupantDisplay.addressLabel : occupantDisplay.primary || occupantDisplay.addressLabel;
+  const occupantFallbackInitials = occupantDisplay.isUnknown ? (occupantInitialsSource?.slice(-2) ?? "??").toUpperCase() : initialsFrom(occupantInitialsSource);
+
+  const donutBalanceDisplay = minerState?.donutBalance !== undefined ? formatTokenAmount(minerState.donutBalance, DONUT_DECIMALS, 2) : "—";
+  const ethBalanceDisplay = minerState?.ethBalance !== undefined ? formatEth(minerState.ethBalance, 4) : "—";
+
+  const handleViewKingGlazerProfile = useCallback(() => {
+    const username = neynarUser?.user?.username;
+    const fid = neynarUser?.user?.fid;
+    if (username) window.open(`https://warpcast.com/${username}`, "_blank", "noopener,noreferrer");
+    else if (fid) window.open(`https://warpcast.com/~/profiles/${fid}`, "_blank", "noopener,noreferrer");
+  }, [neynarUser?.user?.fid, neynarUser?.user?.username]);
+
+  const userDisplayName = context?.user?.displayName ?? context?.user?.username ?? "User";
   const userAvatarUrl = context?.user?.pfpUrl ?? null;
-
-  const isLoading = !strategiesData.length;
-  const isBuying = buyBatchState === "pending" || buyBatchState === "confirming";
-  const isBusy = txStep !== "idle" || isBuying;
+  const isGlazeDisabled = !minerState || isWriting || isConfirming || glazeResult !== null;
 
   return (
-    <main className="flex h-screen w-screen justify-center overflow-hidden bg-black font-mono text-white">
+    <main className="flex min-h-screen w-full max-w-[430px] mx-auto flex-col bg-background font-mono text-foreground">
       <div
-        className="relative flex h-full w-full max-w-[520px] flex-1 flex-col overflow-hidden rounded-[28px] bg-black px-2 pb-4 shadow-inner"
+        className="flex flex-1 flex-col px-4"
         style={{
-          paddingTop: "calc(env(safe-area-inset-top, 0px) + 8px)",
+          paddingTop: "calc(env(safe-area-inset-top, 0px) + 16px)",
           paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 80px)",
         }}
       >
-        <div className="flex flex-1 flex-col overflow-hidden">
+        <div className="flex flex-1 flex-col gap-3 overflow-y-auto scrollbar-hide pb-4">
           {/* Header */}
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold tracking-wide">AUCTIONS</h1>
-            {context?.user ? (
-              <div className="flex items-center gap-2 rounded-full bg-black px-3 py-1">
-                <Avatar className="h-8 w-8 border border-zinc-800">
-                  <AvatarImage src={userAvatarUrl || undefined} alt={userDisplayName} className="object-cover" />
-                  <AvatarFallback className="bg-zinc-800 text-white">{initialsFrom(userDisplayName)}</AvatarFallback>
+            <h1 className="text-xl font-bold">Mine</h1>
+            {context?.user && (
+              <div className="flex items-center gap-2 rounded-full bg-secondary px-3 py-1.5">
+                <Avatar className="h-6 w-6">
+                  <AvatarImage src={userAvatarUrl || undefined} alt={userDisplayName} />
+                  <AvatarFallback className="text-[10px]">{initialsFrom(userDisplayName)}</AvatarFallback>
                 </Avatar>
-                <div className="leading-tight text-left">
-                  <div className="text-sm font-bold">{userDisplayName}</div>
-                  {userHandle ? <div className="text-xs text-gray-400">{userHandle}</div> : null}
-                </div>
+                <span className="text-xs font-medium">{context.user.username || `fid:${context.user.fid}`}</span>
               </div>
-            ) : null}
-          </div>
-
-          {/* Auctions List */}
-          <div className="mt-3 flex-1 overflow-y-auto space-y-3 pb-2">
-            {isLoading ? (
-              <div className="flex items-center justify-center h-40">
-                <div className="text-gray-400">Loading auctions...</div>
-              </div>
-            ) : strategiesData.length === 0 ? (
-              <div className="flex items-center justify-center h-40">
-                <div className="text-gray-400">No active auctions</div>
-              </div>
-            ) : (
-              strategiesData.map((strategy) => {
-                const isSelected = selectedStrategy?.toLowerCase() === strategy.strategy.toLowerCase();
-                const paymentSymbol = getPaymentTokenSymbol(strategy.paymentToken);
-                const priceUsd = getPaymentTokenUsdValue(
-                  strategy.currentPrice,
-                  strategy.paymentTokenDecimals,
-                  strategy.paymentToken,
-                  ethUsdPrice,
-                  lpTokenPrice,
-                  donutPrice,
-                  cbbtcPrice
-                );
-                const receiveUsd = Number(formatEther(strategy.totalPotentialRevenue)) * ethUsdPrice;
-                const isProfitable = priceUsd > 0 && receiveUsd > priceUsd;
-                return (
-                  <Card
-                    key={strategy.strategy}
-                    className={cn(
-                      "border-zinc-800 bg-gradient-to-br from-zinc-950 to-black transition-all cursor-pointer",
-                      isSelected && "border-pink-500 shadow-[inset_0_0_16px_rgba(236,72,153,0.3)]",
-                      isProfitable && !isSelected && "border-green-500/50"
-                    )}
-                    onClick={() => setSelectedStrategy(isSelected ? null : strategy.strategy)}
-                  >
-                    <CardContent className="p-3">
-                      {/* Price & Revenue Row */}
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="rounded-lg p-2 bg-zinc-900/50">
-                          <div className="text-[9px] font-bold uppercase tracking-wide text-gray-400">You Pay</div>
-                          <div className="flex items-center gap-2">
-                            <TokenIcon address={strategy.paymentToken} size={20} />
-                            <div className="text-lg font-bold text-pink-400">
-                              {formatTokenAmount(strategy.currentPrice, strategy.paymentTokenDecimals, 4)}
-                            </div>
-                          </div>
-                          <div className="text-[10px] text-gray-500">
-                            {paymentSymbol}{priceUsd > 0 ? ` (~$${priceUsd.toFixed(2)})` : ""}
-                          </div>
-                        </div>
-                        <div className={cn(
-                          "rounded-lg p-2",
-                          isProfitable ? "bg-green-500/10" : "bg-zinc-900/50"
-                        )}>
-                          <div className="text-[9px] font-bold uppercase tracking-wide text-gray-400">You Receive</div>
-                          <div className="flex items-center gap-2">
-                            <TokenIcon address={TOKEN_ADDRESSES.weth} size={20} />
-                            <div className="text-lg font-bold text-white">
-                              {formatEth(strategy.totalPotentialRevenue, 6)}
-                            </div>
-                          </div>
-                          <div className={cn(
-                            "text-[10px]",
-                            isProfitable ? "text-green-400" : "text-gray-500"
-                          )}>
-                            WETH (~${receiveUsd.toFixed(2)})
-                          </div>
-                        </div>
-                      </div>
-
-                    </CardContent>
-                  </Card>
-                );
-              })
             )}
           </div>
 
+          {/* King Glazer Card */}
+          <Card className={cn(
+            "overflow-hidden",
+            occupantDisplay.isYou && "border-primary/50 animate-border-glow"
+          )}>
+            <CardContent className="p-3">
+              <div className="flex items-center justify-between gap-3">
+                {/* Left: Profile */}
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <div
+                    className={cn(
+                      "cursor-pointer hover:opacity-80 transition-opacity",
+                      !neynarUser?.user?.fid && "cursor-default"
+                    )}
+                    onClick={neynarUser?.user?.fid ? handleViewKingGlazerProfile : undefined}
+                  >
+                    <Avatar className="h-10 w-10 ring-2 ring-primary/30">
+                      <AvatarImage src={occupantDisplay.avatarUrl || undefined} alt={occupantDisplay.primary} />
+                      <AvatarFallback>
+                        {minerState ? occupantFallbackInitials : <CircleUserRound className="h-5 w-5" />}
+                      </AvatarFallback>
+                    </Avatar>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <Badge variant={occupantDisplay.isYou ? "default" : "secondary"} className="text-[10px]">
+                        King Glazer
+                      </Badge>
+                    </div>
+                    <div className="text-sm font-semibold truncate">{occupantDisplay.primary}</div>
+                    {occupantDisplay.secondary && (
+                      <div className="text-[10px] text-muted-foreground truncate">{occupantDisplay.secondary}</div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Right: Stats */}
+                <div className="flex flex-col gap-0.5 text-right shrink-0">
+                  <div className="text-[10px] text-muted-foreground">
+                    <span className="mr-1">TIME</span>
+                    <span className="font-medium text-foreground">{glazeTimeDisplay}</span>
+                  </div>
+                  <div className="text-[10px] text-muted-foreground flex items-center justify-end gap-1">
+                    <span>GLAZED</span>
+                    <TokenIcon address={TOKEN_ADDRESSES.donut} size={10} />
+                    <span className="font-medium text-foreground">{glazedDisplay}</span>
+                  </div>
+                  <div className="text-[10px] text-muted-foreground">
+                    <span className="mr-1">PNL</span>
+                    <span className="font-medium text-foreground">{pnlData.pnlEth}</span>
+                  </div>
+                  <div className={cn("text-xs font-bold", pnlData.isPositive ? "text-green-500" : "text-red-500")}>
+                    {pnlData.totalUsd}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Scrolling Message */}
+          <div className="relative overflow-hidden bg-secondary/30 rounded-lg py-1">
+            <div className="flex animate-scroll whitespace-nowrap text-xs font-medium text-primary">
+              {Array.from({ length: 100 }).map((_, i) => (
+                <span key={i} className="inline-block px-6">
+                  {minerState?.uri?.trim() || "We Glaze The World"}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Video */}
+          <div className="relative overflow-hidden rounded-xl">
+            <video
+              ref={videoRef}
+              className="w-full object-contain"
+              autoPlay
+              loop
+              muted={isMuted}
+              playsInline
+              preload="auto"
+              src="/media/donut-loop.mp4"
+            />
+            <button
+              onClick={() => setIsMuted(!isMuted)}
+              className="absolute bottom-2 right-2 p-2 rounded-full bg-black/60 hover:bg-black/80 transition-colors"
+              aria-label={isMuted ? "Unmute" : "Mute"}
+            >
+              {isMuted ? <VolumeOff className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+            </button>
+          </div>
+
+          {/* Stats Grid */}
+          <div className="grid grid-cols-2 gap-3">
+            <Card>
+              <CardContent className="p-3">
+                <div className="text-[10px] font-medium uppercase text-muted-foreground mb-1">Glaze Rate</div>
+                <div className="flex items-center gap-1.5">
+                  <TokenIcon address={TOKEN_ADDRESSES.donut} size={18} />
+                  <span className="text-lg font-bold">{glazeRateDisplay}</span>
+                  <span className="text-[10px] text-muted-foreground">/s</span>
+                </div>
+                <div className="text-[10px] text-muted-foreground">${glazeRateUsdValue}/s</div>
+              </CardContent>
+            </Card>
+            <Card className="border-primary/30">
+              <CardContent className="p-3">
+                <div className="text-[10px] font-medium uppercase text-muted-foreground mb-1">
+                  Price
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-lg font-bold text-primary">{glazePriceDisplay}</span>
+                </div>
+                <div className="text-[10px] text-muted-foreground">
+                  ${minerState ? (Number(formatEther(minerState.price)) * ethUsdPrice).toFixed(2) : "0.00"}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Message Input */}
+          <Input
+            type="text"
+            value={customMessage}
+            onChange={(e) => setCustomMessage(e.target.value)}
+            placeholder="Add a message (optional)"
+            maxLength={100}
+            disabled={isGlazeDisabled}
+          />
+
+          {/* Mine Button */}
+          <Button
+            size="lg"
+            className={cn(
+              "w-full",
+              glazeResult === "success" && "bg-green-600 hover:bg-green-600",
+              glazeResult === "failure" && "bg-destructive hover:bg-destructive"
+            )}
+            onClick={handleGlaze}
+            disabled={isGlazeDisabled}
+          >
+            {glazeResult === "success" ? (
+              <><Zap className="w-4 h-4" /> Success!</>
+            ) : glazeResult === "failure" ? (
+              "Failed"
+            ) : isWriting || isConfirming ? (
+              "Mining..."
+            ) : (
+              <><Pickaxe className="w-4 h-4" /> Mine</>
+            )}
+          </Button>
+
+          {/* Balances */}
+          <Card>
+            <CardContent className="p-3">
+              <div className="text-[10px] font-medium uppercase text-muted-foreground mb-2">Your Balances</div>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <div className="flex items-center gap-1 text-xs font-medium">
+                    <TokenIcon address={TOKEN_ADDRESSES.donut} size={12} />
+                    <span>{donutBalanceDisplay}</span>
+                  </div>
+                  <div className="text-[10px] text-muted-foreground mt-1">Mined</div>
+                  <div className="flex items-center gap-1 text-xs font-medium">
+                    <TokenIcon address={TOKEN_ADDRESSES.donut} size={10} />
+                    <span>{accountData?.mined ? Number(accountData.mined).toLocaleString(undefined, { maximumFractionDigits: 2 }) : "0"}</span>
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs font-medium">Ξ {ethBalanceDisplay}</div>
+                  <div className="text-[10px] text-muted-foreground mt-1">Spent</div>
+                  <div className="text-xs font-medium">
+                    Ξ {accountData?.spent ? Number(accountData.spent).toLocaleString(undefined, { maximumFractionDigits: 4 }) : "0"}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs font-medium">
+                    wΞ {minerState?.wethBalance !== undefined ? formatEth(minerState.wethBalance, 4) : "—"}
+                  </div>
+                  <div className="text-[10px] text-muted-foreground mt-1">Earned</div>
+                  <div className="text-xs font-medium">
+                    wΞ {accountData?.earned ? Number(accountData.earned).toLocaleString(undefined, { maximumFractionDigits: 4 }) : "0"}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
-
-      {/* Buy Panel - Fixed above NavBar */}
-      {selectedStrategyData && (() => {
-        const selectedPayUsd = getPaymentTokenUsdValue(
-          selectedStrategyData.currentPrice,
-          selectedStrategyData.paymentTokenDecimals,
-          selectedStrategyData.paymentToken,
-          ethUsdPrice,
-          lpTokenPrice,
-          donutPrice,
-          cbbtcPrice
-        );
-        const selectedReceiveUsd = Number(formatEther(selectedStrategyData.totalPotentialRevenue)) * ethUsdPrice;
-        const selectedIsProfitable = selectedPayUsd > 0 && selectedReceiveUsd > selectedPayUsd;
-        const profitOrLoss = selectedReceiveUsd - selectedPayUsd;
-        const selectedPaymentSymbol = getPaymentTokenSymbol(selectedStrategyData.paymentToken);
-
-        return (
-        <div
-          className="fixed left-0 right-0 bg-zinc-950 px-4 py-3"
-          style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 64px)" }}
-        >
-          <div className="max-w-[520px] mx-auto space-y-3">
-            {/* Profitability Message */}
-            <div className={cn(
-              "text-center text-xs py-2 px-3 rounded-lg",
-              selectedIsProfitable ? "bg-green-500/10 text-green-400" : "bg-red-500/10 text-red-400"
-            )}>
-              {selectedIsProfitable ? (
-                <>
-                  <span className="font-semibold">Profitable blaze!</span> You&apos;ll receive ${selectedReceiveUsd.toFixed(2)} in WETH for ${selectedPayUsd.toFixed(2)} in {selectedPaymentSymbol} (+${profitOrLoss.toFixed(2)})
-                </>
-              ) : (
-                <>
-                  <span className="font-semibold">Unprofitable blaze!</span> You&apos;ll receive ${selectedReceiveUsd.toFixed(2)} in WETH for ${selectedPayUsd.toFixed(2)} in {selectedPaymentSymbol} (-${Math.abs(profitOrLoss).toFixed(2)})
-                </>
-              )}
-            </div>
-
-            {/* Balance Row */}
-            <div className="flex justify-between items-center text-sm">
-              <div className="flex items-center gap-2">
-                <span className="text-gray-400">Your Balance:</span>
-                <TokenIcon address={selectedStrategyData.paymentToken} size={16} />
-                <span className="text-white font-semibold">
-                  {formatTokenAmount(selectedStrategyData.accountPaymentTokenBalance, selectedStrategyData.paymentTokenDecimals, 4)}
-                </span>
-              </div>
-              {selectedStrategyData.accountPaymentTokenBalance < selectedStrategyData.currentPrice && (
-                <a
-                  href={`https://app.uniswap.org/swap?outputCurrency=${selectedStrategyData.paymentToken}&chain=base`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-pink-400 text-xs underline"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  Get {selectedPaymentSymbol}
-                </a>
-              )}
-            </div>
-
-            {/* Buy Button */}
-            <Button
-              className={cn(
-                "w-full rounded-xl py-3 text-sm font-bold shadow-lg transition-colors",
-                buyResult === "success" && "bg-green-500 hover:bg-green-400",
-                buyResult === "failure" && "bg-red-500 hover:bg-red-400",
-                !buyResult && "bg-pink-500 hover:bg-pink-400"
-              )}
-              onClick={handleBuy}
-              disabled={isBusy || selectedStrategyData.accountPaymentTokenBalance < selectedStrategyData.currentPrice}
-            >
-              {buyResult === "success" ? "SUCCESS!" :
-               buyResult === "failure" ? "FAILED" :
-               txStep === "buying" || isBuying ? "BUYING..." :
-               "BUY AUCTION"}
-            </Button>
-          </div>
-        </div>
-        );
-      })()}
 
       <NavBar />
     </main>

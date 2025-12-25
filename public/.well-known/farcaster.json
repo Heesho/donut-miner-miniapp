@@ -12,7 +12,7 @@
     "iconUrl": "https://glazecorp.vercel.app/media/icon.png",
     "homeUrl": "https://glazecorp.vercel.app/",
     "splashImageUrl": "https://glazecorp.vercel.app/media/splash.png",
-    "splashBackgroundColor": "#FEE7EC",
+    "splashBackgroundColor": "#000000",
     "heroImageUrl": "https://glazecorp.vercel.app/media/hero.png",
     "buttonTitle": "We Glaze The World",
     "ogTitle": "We Glaze The World",
