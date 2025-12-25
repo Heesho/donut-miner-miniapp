@@ -489,7 +489,7 @@ export default function VotePage() {
               </div>
             </CardContent>
           </Card>
-          <Card className={hasPendingRewards ? "border-green-500/50" : ""}>
+          <Card>
             <CardContent className="p-2">
               <div className="flex items-center justify-between">
                 <div>
@@ -502,7 +502,7 @@ export default function VotePage() {
                   size="sm"
                   className={cn(
                     "h-6 text-[10px] px-2",
-                    hasPendingRewards ? "bg-green-600 hover:bg-green-500" : "opacity-50"
+                    !hasPendingRewards && "opacity-50"
                   )}
                   onClick={handleClaimBribes}
                   disabled={isBusy || !hasPendingRewards}
@@ -604,7 +604,7 @@ export default function VotePage() {
                             <span className="text-[10px] font-bold text-primary">{votePercent.toFixed(1)}%</span>
                           </div>
                           <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                            <span>APR: <span className={apr > 0 ? "text-green-500 font-medium" : ""}>{apr > 0 ? `${apr.toFixed(0)}%` : "—"}</span></span>
+                            <span>APR: {apr > 0 ? `${apr.toFixed(0)}%` : "—"}</span>
                             <span>Earned: {userEarned > 0n ? formatTokenAmount(userEarned, earnedDecimals, 2) : "0"} {paymentSymbol}</span>
                           </div>
                         </div>

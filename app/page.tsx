@@ -518,7 +518,7 @@ export default function HomePage() {
                   Glaze Price <span className="text-green-500">(5% Rebate)</span>
                 </div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-base font-bold text-green-500">{glazePriceDisplay}</span>
+                  <span className="text-base font-bold text-primary">{glazePriceDisplay}</span>
                   <span className="text-xs text-muted-foreground line-through">
                     Ξ{minerState ? formatEth(minerState.price, minerState.price === 0n ? 0 : 5) : "—"}
                   </span>
