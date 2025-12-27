@@ -575,21 +575,30 @@ export default function VotePage() {
                     const userEarned = paymentTokenIndex >= 0 ? bribe.accountRewardsEarned[paymentTokenIndex] : 0n;
                     const earnedDecimals = paymentTokenIndex >= 0 ? bribe.rewardTokenDecimals[paymentTokenIndex] : 18;
 
-                    // Calculate APR using rewardsPerToken (rewards per vote per 7 days)
-                    // Sum up USD value of all reward tokens per vote
-                    let rewardsPerVoteUsd = 0;
+                    // Calculate APR using rewardsPerToken
+                    // rewardsPerToken = (rewardRate * 604800) * 1e18 / bribeTotalSupply
+                    // This is rewards in raw token units per 1e18 gDONUT staked per 7 days
+                    let totalAnnualRewardsUsd = 0;
                     bribe.rewardTokens.forEach((token, i) => {
                       const rewardsPerToken = bribe.rewardsPerToken[i] ?? 0n;
                       const decimals = bribe.rewardTokenDecimals[i] ?? 18;
-                      const tokenAmount = Number(formatUnits(rewardsPerToken, decimals));
                       const tokenPrice = getTokenUsdPrice(token);
-                      rewardsPerVoteUsd += tokenAmount * tokenPrice;
+
+                      // Skip if no rewards or no price
+                      if (rewardsPerToken === 0n || tokenPrice === 0) return;
+
+                      // Annual rewards in raw token units per 1 gDONUT staked
+                      // Multiply by 52 weeks BEFORE converting to human-readable to avoid precision loss
+                      const annualRewardsRaw = rewardsPerToken * 52n;
+
+                      // Convert to human-readable and USD
+                      // For low-decimal tokens like cbBTC (8 decimals), rewardsPerToken may be very small (e.g., 2)
+                      // but annualRewardsRaw = 2 * 52 = 104, which converts better
+                      const annualRewardsHuman = Number(annualRewardsRaw) / Math.pow(10, decimals);
+                      totalAnnualRewardsUsd += annualRewardsHuman * tokenPrice;
                     });
-                    // 1 vote = 1 DONUT, so vote value in USD = donutPrice
-                    // APR = (weekly yield per vote / vote value) * 52 weeks * 100 for percentage
-                    const apr = donutPrice > 0
-                      ? (rewardsPerVoteUsd / donutPrice) * 52 * 100
-                      : 0;
+                    // APR = (annual rewards USD per gDONUT / gDONUT price) * 100
+                    const apr = donutPrice > 0 ? (totalAnnualRewardsUsd / donutPrice) * 100 : 0;
 
                     const userVotePercent = voterData && voterData.accountGovernanceTokenBalance > 0n
                       ? (Number(bribe.accountVote) / Number(voterData.accountGovernanceTokenBalance)) * 100
