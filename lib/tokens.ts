@@ -20,6 +20,7 @@ export const TOKEN_ADDRESSES = {
   cbbtc: "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf" as Address,
   donutEthLp: "0xD1DbB2E56533C55C3A637D13C53aeEf65c5D5703" as Address,
   gDonut: "0xC78B6e362cB0f48b59E573dfe7C99d92153a16d3" as Address,
+  qr: "0x2b5050f01d64fbb3e4ac44dc07f0732bfb5ecadf" as Address,
 } as const;
 
 // Token metadata registry
@@ -72,6 +73,14 @@ export const TOKENS: Record<string, TokenInfo> = {
     symbol: "gDONUT",
     decimals: 18,
     icon: "/tokens/gdonut.svg",
+  },
+  [TOKEN_ADDRESSES.qr.toLowerCase()]: {
+    address: TOKEN_ADDRESSES.qr,
+    name: "QR coin",
+    symbol: "QR",
+    decimals: 18,
+    icon: "/tokens/qr.png",
+    coingeckoId: "qr-coin",
   },
 };
 
