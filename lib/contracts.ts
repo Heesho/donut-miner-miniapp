@@ -664,10 +664,14 @@ export const ERC20_ABI = [
 // cbBTC address on Base
 export const CBBTC_ADDRESS = "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf";
 
+// QR coin address on Base
+export const QR_ADDRESS = "0x2b5050f01d64fbb3e4ac44dc07f0732bfb5ecadf";
+
 // Payment token symbols for display
 export const PAYMENT_TOKEN_SYMBOLS: Record<string, string> = {
   [CONTRACT_ADDRESSES.donut.toLowerCase()]: "DONUT",
   [CONTRACT_ADDRESSES.donutEthLp.toLowerCase()]: "DONUT-ETH LP",
   [CONTRACT_ADDRESSES.usdc.toLowerCase()]: "USDC",
   [CBBTC_ADDRESS.toLowerCase()]: "cbBTC",
+  [QR_ADDRESS.toLowerCase()]: "QR",
 };

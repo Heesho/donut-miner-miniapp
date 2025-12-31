@@ -97,7 +97,8 @@ const getPaymentTokenUsdValue = (
   ethPrice: number,
   lpPrice: number,
   donutPrice: number,
-  cbbtcPrice: number
+  cbbtcPrice: number,
+  qrPrice: number
 ): number => {
   const tokenAmount = Number(formatUnits(amount, decimals));
   const tokenLower = paymentToken.toLowerCase();
@@ -105,6 +106,7 @@ const getPaymentTokenUsdValue = (
   if (tokenLower === TOKEN_ADDRESSES.donutEthLp.toLowerCase()) return tokenAmount * lpPrice;
   if (tokenLower === TOKEN_ADDRESSES.donut.toLowerCase()) return tokenAmount * donutPrice;
   if (tokenLower === TOKEN_ADDRESSES.cbbtc.toLowerCase()) return tokenAmount * cbbtcPrice;
+  if (tokenLower === TOKEN_ADDRESSES.qr.toLowerCase()) return tokenAmount * qrPrice;
   return 0;
 };
 
@@ -120,9 +122,10 @@ export default function AuctionsPage() {
   const { price: lpTokenPrice = 0 } = useLpTokenPrice(TOKEN_ADDRESSES.donutEthLp);
   const { data: donutPrice = 0 } = useTokenPrice(TOKEN_ADDRESSES.donut);
   const { data: cbbtcPrice = 0 } = useTokenPrice(TOKEN_ADDRESSES.cbbtc);
+  const { data: qrPrice = 0 } = useTokenPrice(TOKEN_ADDRESSES.qr);
 
   // Debug prices
-  console.log("Prices:", { ethUsdPrice, lpTokenPrice, donutPrice, cbbtcPrice });
+  console.log("Prices:", { ethUsdPrice, lpTokenPrice, donutPrice, cbbtcPrice, qrPrice });
 
   const buyResultTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -200,7 +203,8 @@ export default function AuctionsPage() {
         ethUsdPrice,
         lpTokenPrice,
         donutPrice,
-        cbbtcPrice
+        cbbtcPrice,
+        qrPrice
       );
       const receiveUsdA = Number(formatEther(a.totalPotentialRevenue)) * ethUsdPrice;
       const profitA = receiveUsdA - priceUsdA;
@@ -212,7 +216,8 @@ export default function AuctionsPage() {
         ethUsdPrice,
         lpTokenPrice,
         donutPrice,
-        cbbtcPrice
+        cbbtcPrice,
+        qrPrice
       );
       const receiveUsdB = Number(formatEther(b.totalPotentialRevenue)) * ethUsdPrice;
       const profitB = receiveUsdB - priceUsdB;
@@ -354,7 +359,8 @@ export default function AuctionsPage() {
                   ethUsdPrice,
                   lpTokenPrice,
                   donutPrice,
-                  cbbtcPrice
+                  cbbtcPrice,
+                  qrPrice
                 );
                 const receiveUsd = Number(formatEther(strategy.totalPotentialRevenue)) * ethUsdPrice;
                 const isProfitable = priceUsd > 0 && receiveUsd > priceUsd;
@@ -427,7 +433,8 @@ export default function AuctionsPage() {
             ethUsdPrice,
             lpTokenPrice,
             donutPrice,
-            cbbtcPrice
+            cbbtcPrice,
+            qrPrice
           );
           const selectedReceiveUsd = Number(formatEther(selectedStrategyData.totalPotentialRevenue)) * ethUsdPrice;
           const selectedIsProfitable = selectedPayUsd > 0 && selectedReceiveUsd > selectedPayUsd;
