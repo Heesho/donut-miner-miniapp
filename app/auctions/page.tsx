@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { sdk } from "@farcaster/miniapp-sdk";
 import { Zap, ExternalLink } from "lucide-react";
 import {
@@ -124,9 +125,6 @@ export default function AuctionsPage() {
   const { data: cbbtcPrice = 0 } = useTokenPrice(TOKEN_ADDRESSES.cbbtc);
   const { data: qrPrice = 0 } = useTokenPrice(TOKEN_ADDRESSES.qr);
 
-  // Debug prices
-  console.log("Prices:", { ethUsdPrice, lpTokenPrice, donutPrice, cbbtcPrice, qrPrice });
-
   const buyResultTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showBuyResult = useCallback((result: "success" | "failure") => {
@@ -183,7 +181,7 @@ export default function AuctionsPage() {
     functionName: "getAllStrategiesData",
     args: [address ?? zeroAddress],
     chainId: base.id,
-    query: { refetchInterval: 5_000 },
+    query: { refetchInterval: 10_000 }, // Reduced from 5s to 10s
   });
 
   const strategiesData = useMemo(() => {
@@ -258,6 +256,11 @@ export default function AuctionsPage() {
   useEffect(() => {
     if (batchState === "success") {
       showBuyResult("success");
+      // Haptic feedback on success (if available)
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (sdk.actions as any).hapticFeedback?.({ type: "success" });
+      } catch {}
       refetchStrategies();
       refetchAllowance();
       setTxStep("idle");
@@ -265,6 +268,11 @@ export default function AuctionsPage() {
       setSelectedStrategy(null);
     } else if (batchState === "error") {
       showBuyResult("failure");
+      // Haptic feedback on error (if available)
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (sdk.actions as any).hapticFeedback?.({ type: "error" });
+      } catch {}
       setTxStep("idle");
       resetBatch();
     }
@@ -341,8 +349,18 @@ export default function AuctionsPage() {
           {/* Auctions List */}
           <div className="flex-1 overflow-y-auto scrollbar-hide space-y-2">
             {isLoading ? (
-              <div className="flex items-center justify-center h-32">
-                <span className="text-sm text-muted-foreground">Loading auctions...</span>
+              <div className="space-y-2">
+                {[1, 2, 3].map((i) => (
+                  <Card key={i}>
+                    <CardContent className="p-2">
+                      <div className="flex items-center gap-2">
+                        <Skeleton className="flex-1 h-16 rounded" />
+                        <Skeleton className="flex-1 h-16 rounded" />
+                        <Skeleton className="h-6 w-16 rounded" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
             ) : sortedStrategies.length === 0 ? (
               <div className="flex items-center justify-center h-32">

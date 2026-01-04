@@ -1,12 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, startTransition } from "react";
 import { sdk } from "@farcaster/miniapp-sdk";
 import { Gift, RotateCcw, Vote as VoteIcon, Zap } from "lucide-react";
 import {
   useAccount,
   useConnect,
-  useReadContract,
+  useReadContracts,
   useWaitForTransactionReceipt,
   useWriteContract,
 } from "wagmi";
@@ -194,50 +194,59 @@ export default function VotePage() {
     connectAsync({ connector: primaryConnector, chainId: base.id }).catch(() => {});
   }, [connectAsync, isConnected, isConnecting, primaryConnector]);
 
-  const { data: rawVoterData, refetch: refetchVoterData } = useReadContract({
-    address: CONTRACT_ADDRESSES.lsgMulticall as Address,
-    abi: LSG_MULTICALL_ABI,
-    functionName: "getVoterData",
-    args: [address ?? zeroAddress],
-    chainId: base.id,
-    query: { refetchInterval: 5_000 },
+  // Batch all 3 RPC calls into a single request (was 3 separate calls = 66% fewer RPC calls)
+  const { data: batchedData, refetch: refetchAllData } = useReadContracts({
+    contracts: [
+      {
+        address: CONTRACT_ADDRESSES.lsgMulticall as Address,
+        abi: LSG_MULTICALL_ABI,
+        functionName: "getVoterData",
+        args: [address ?? zeroAddress],
+        chainId: base.id,
+      },
+      {
+        address: CONTRACT_ADDRESSES.lsgMulticall as Address,
+        abi: LSG_MULTICALL_ABI,
+        functionName: "getAllBribesData",
+        args: [address ?? zeroAddress],
+        chainId: base.id,
+      },
+      {
+        address: CONTRACT_ADDRESSES.lsgMulticall as Address,
+        abi: LSG_MULTICALL_ABI,
+        functionName: "getAllStrategiesData",
+        args: [address ?? zeroAddress],
+        chainId: base.id,
+      },
+    ],
+    query: { refetchInterval: 10_000 }, // Reduced from 5s to 10s
   });
 
+  // Extract individual results from batched response
   const voterData = useMemo(() => {
-    if (!rawVoterData) return null;
-    return rawVoterData as unknown as VoterData;
-  }, [rawVoterData]);
-
-  const { data: rawBribesData, refetch: refetchBribesData } = useReadContract({
-    address: CONTRACT_ADDRESSES.lsgMulticall as Address,
-    abi: LSG_MULTICALL_ABI,
-    functionName: "getAllBribesData",
-    args: [address ?? zeroAddress],
-    chainId: base.id,
-    query: { refetchInterval: 5_000 },
-  });
+    const result = batchedData?.[0];
+    if (!result || result.status !== "success") return null;
+    return result.result as unknown as VoterData;
+  }, [batchedData]);
 
   const bribesData = useMemo(() => {
-    if (!rawBribesData) return [];
-    return (rawBribesData as unknown as BribeData[]).filter(b => b.isAlive);
-  }, [rawBribesData]);
-
-  const { data: rawStrategiesData } = useReadContract({
-    address: CONTRACT_ADDRESSES.lsgMulticall as Address,
-    abi: LSG_MULTICALL_ABI,
-    functionName: "getAllStrategiesData",
-    args: [address ?? zeroAddress],
-    chainId: base.id,
-    query: { refetchInterval: 5_000 },
-  });
+    const result = batchedData?.[1];
+    if (!result || result.status !== "success") return [];
+    return (result.result as unknown as BribeData[]).filter(b => b.isAlive);
+  }, [batchedData]);
 
   const strategyDataMap = useMemo(() => {
-    if (!rawStrategiesData) return new Map<string, StrategyData>();
-    const strategies = rawStrategiesData as unknown as StrategyData[];
+    const result = batchedData?.[2];
+    if (!result || result.status !== "success") return new Map<string, StrategyData>();
+    const strategies = result.result as unknown as StrategyData[];
     const map = new Map<string, StrategyData>();
     strategies.forEach(s => map.set(s.strategy.toLowerCase(), s));
     return map;
-  }, [rawStrategiesData]);
+  }, [batchedData]);
+
+  // Convenience refetch functions for backwards compatibility
+  const refetchVoterData = refetchAllData;
+  const refetchBribesData = refetchAllData;
 
   // Price hooks for USD calculation
   const { data: ethUsdPrice = 3500 } = useEthPrice();
@@ -298,6 +307,10 @@ export default function VotePage() {
   useEffect(() => {
     if (voteReceipt?.status === "success") {
       showTxResult("success");
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (sdk.actions as any).hapticFeedback?.({ type: "success" });
+      } catch {}
       refetchVoterData();
       refetchBribesData();
       setVoteWeights({});
@@ -305,6 +318,10 @@ export default function VotePage() {
       resetVote();
     } else if (voteReceipt?.status === "reverted") {
       showTxResult("failure");
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (sdk.actions as any).hapticFeedback?.({ type: "error" });
+      } catch {}
       setTxStep("idle");
       resetVote();
     }
@@ -313,12 +330,20 @@ export default function VotePage() {
   useEffect(() => {
     if (resetReceipt?.status === "success") {
       showTxResult("success");
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (sdk.actions as any).hapticFeedback?.({ type: "success" });
+      } catch {}
       refetchVoterData();
       refetchBribesData();
       setTxStep("idle");
       resetResetTx();
     } else if (resetReceipt?.status === "reverted") {
       showTxResult("failure");
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (sdk.actions as any).hapticFeedback?.({ type: "error" });
+      } catch {}
       setTxStep("idle");
       resetResetTx();
     }
@@ -327,11 +352,19 @@ export default function VotePage() {
   useEffect(() => {
     if (claimReceipt?.status === "success") {
       showTxResult("success");
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (sdk.actions as any).hapticFeedback?.({ type: "success" });
+      } catch {}
       refetchBribesData();
       setTxStep("idle");
       resetClaim();
     } else if (claimReceipt?.status === "reverted") {
       showTxResult("failure");
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (sdk.actions as any).hapticFeedback?.({ type: "error" });
+      } catch {}
       setTxStep("idle");
       resetClaim();
     }
@@ -418,8 +451,8 @@ export default function VotePage() {
     }).filter(d => d.percent > 0);
   }, [bribesData, strategyDataMap]);
 
-  // Generate pie chart SVG path
-  const generatePieSlices = () => {
+  // Memoized pie chart SVG slices - only recalculates when pieChartData changes
+  const pieSlices = useMemo(() => {
     if (!pieChartData.length) return null;
     const slices: React.ReactNode[] = [];
     let currentAngle = -90; // Start from top
@@ -453,7 +486,7 @@ export default function VotePage() {
     });
 
     return slices;
-  };
+  }, [pieChartData]);
 
   return (
     <main className="flex min-h-screen w-full max-w-[430px] mx-auto flex-col bg-background font-mono text-foreground">
@@ -524,9 +557,7 @@ export default function VotePage() {
               {/* Pie Chart SVG */}
               <div className="w-20 h-20 flex-shrink-0">
                 <svg viewBox="0 0 100 100" className="w-full h-full">
-                  {pieChartData.length > 0 ? (
-                    generatePieSlices()
-                  ) : (
+                  {pieSlices ?? (
                     <circle cx="50" cy="50" r="40" fill="hsl(var(--secondary))" />
                   )}
                 </svg>
@@ -647,7 +678,10 @@ export default function VotePage() {
                                 value={currentWeight || ""}
                                 onChange={(e) => {
                                   const newWeight = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
-                                  setVoteWeights(prev => ({ ...prev, [bribe.strategy]: newWeight }));
+                                  // Use startTransition for non-blocking update
+                                  startTransition(() => {
+                                    setVoteWeights(prev => ({ ...prev, [bribe.strategy]: newWeight }));
+                                  });
                                 }}
                                 className="w-10 h-6 text-xs text-center p-0 border-0 bg-transparent no-spinners"
                                 placeholder="0"

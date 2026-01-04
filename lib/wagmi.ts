@@ -17,5 +17,5 @@ export const wagmiConfig = createConfig({
   storage: createStorage({
     storage: cookieStorage,
   }),
-  pollingInterval: 12_000,
+  pollingInterval: 30_000, // Reduced from 12s - less aggressive global polling
 });

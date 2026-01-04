@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { sdk } from "@farcaster/miniapp-sdk";
-import { CircleUserRound, Volume2, VolumeOff, Pickaxe, Zap } from "lucide-react";
+import { CircleUserRound, Pickaxe, Zap, ExternalLink } from "lucide-react";
 import {
   useAccount,
   useConnect,
@@ -19,12 +19,16 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Confetti } from "@/components/confetti";
 import { CONTRACT_ADDRESSES, MINER_MULTICALL_ABI } from "@/lib/contracts";
 import { cn, getEthPrice } from "@/lib/utils";
 import { useAccountData } from "@/hooks/useAccountData";
 import { NavBar } from "@/components/nav-bar";
 import { TokenIcon } from "@/components/token-icon";
 import { TOKEN_ADDRESSES } from "@/lib/tokens";
+
+const MAX_MESSAGE_LENGTH = 100;
 
 type MiniAppContext = {
   user?: {
@@ -103,6 +107,45 @@ const formatGlazeTime = (seconds: number): string => {
   return `${secs}s`;
 };
 
+// Helper to detect URLs in text and make them clickable
+const URL_REGEX = /https?:\/\/[^\s<]+[^\s<.,;:!?)}\]'"]/gi;
+
+const renderMessageWithLinks = (text: string) => {
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match;
+
+  const regex = new RegExp(URL_REGEX);
+  while ((match = regex.exec(text)) !== null) {
+    // Add text before the URL
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+    // Add the clickable URL
+    const url = match[0];
+    const displayUrl = url.replace(/^https?:\/\//, "").slice(0, 30) + (url.length > 40 ? "..." : "");
+    parts.push(
+      <a
+        key={match.index}
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-0.5 text-primary hover:underline"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {displayUrl}
+        <ExternalLink className="w-3 h-3" />
+      </a>
+    );
+    lastIndex = regex.lastIndex;
+  }
+  // Add remaining text
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+  return parts.length > 0 ? parts : text;
+};
+
 export default function HomePage() {
   const readyRef = useRef(false);
   const autoConnectAttempted = useRef(false);
@@ -110,8 +153,8 @@ export default function HomePage() {
   const [customMessage, setCustomMessage] = useState("");
   const [ethUsdPrice, setEthUsdPrice] = useState<number>(3500);
   const [glazeResult, setGlazeResult] = useState<"success" | "failure" | null>(null);
-  const [isMuted, setIsMuted] = useState(true);
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const previousMinerRef = useRef<Address | null>(null);
   const glazeResultTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const resetGlazeResult = useCallback(() => {
@@ -170,7 +213,8 @@ export default function HomePage() {
       setEthUsdPrice(price);
     };
     fetchPrice();
-    const interval = setInterval(fetchPrice, 60_000);
+    // Reduced from 60s to 5 minutes - ETH price doesn't change that fast
+    const interval = setInterval(fetchPrice, 300_000);
     return () => clearInterval(interval);
   }, []);
 
@@ -214,13 +258,48 @@ export default function HomePage() {
 
   useEffect(() => {
     if (!receipt) return;
-    if (receipt.status === "success" || receipt.status === "reverted") {
-      showGlazeResult(receipt.status === "success" ? "success" : "failure");
+    if (receipt.status === "success") {
+      showGlazeResult("success");
+      // Haptic feedback on success (if available)
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (sdk.actions as any).hapticFeedback?.({ type: "success" });
+      } catch {}
+      refetchMinerState();
+      const resetTimer = setTimeout(() => resetWrite(), 500);
+      return () => clearTimeout(resetTimer);
+    } else if (receipt.status === "reverted") {
+      showGlazeResult("failure");
+      // Haptic feedback on failure (if available)
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (sdk.actions as any).hapticFeedback?.({ type: "error" });
+      } catch {}
       refetchMinerState();
       const resetTimer = setTimeout(() => resetWrite(), 500);
       return () => clearTimeout(resetTimer);
     }
   }, [receipt, refetchMinerState, resetWrite, showGlazeResult]);
+
+  // Track when user becomes King Glazer and trigger confetti
+  useEffect(() => {
+    if (!address || !minerState) return;
+    const currentMiner = minerState.miner;
+    const isNowKing = currentMiner.toLowerCase() === address.toLowerCase();
+    const wasKing = previousMinerRef.current?.toLowerCase() === address.toLowerCase();
+
+    // Trigger confetti if user just became king (wasn't before, is now)
+    if (isNowKing && !wasKing && previousMinerRef.current !== null) {
+      setShowConfetti(true);
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (sdk.actions as any).hapticFeedback?.({ type: "success" });
+      } catch {}
+      setTimeout(() => setShowConfetti(false), 3500);
+    }
+
+    previousMinerRef.current = currentMiner;
+  }, [address, minerState]);
 
   const minerAddress = minerState?.miner ?? zeroAddress;
   const hasMiner = minerAddress !== zeroAddress;
@@ -277,33 +356,57 @@ export default function HomePage() {
   const [interpolatedGlazed, setInterpolatedGlazed] = useState<bigint | null>(null);
   const [glazeElapsedSeconds, setGlazeElapsedSeconds] = useState<number>(0);
 
+  // Use refs to avoid recreating intervals on every minerState change
+  const minerStateRef = useRef(minerState);
+  minerStateRef.current = minerState;
+
+  // Track epoch changes to know when to reset the interval
+  const currentEpochId = minerState?.epochId;
+
+  // Interpolate glazed amount - only restart interval when epoch changes
   useEffect(() => {
     if (!minerState) {
       setInterpolatedGlazed(null);
       return;
     }
+    // Reset to actual value when epoch changes
     setInterpolatedGlazed(minerState.glazed);
+  }, [currentEpochId, minerState?.glazed]);
+
+  // Single interval that reads from ref (no dependency on minerState)
+  useEffect(() => {
     const interval = setInterval(() => {
-      if (minerState.nextDps > 0n) {
-        setInterpolatedGlazed((prev) => (prev ? prev + minerState.nextDps : minerState.glazed));
+      const state = minerStateRef.current;
+      if (state && state.nextDps > 0n) {
+        setInterpolatedGlazed((prev) => (prev ? prev + state.nextDps : state.glazed));
       }
     }, 1_000);
     return () => clearInterval(interval);
-  }, [minerState]);
+  }, []); // Empty deps - interval never recreated
+
+  // Track start time for elapsed calculation
+  const startTimeRef = useRef<number>(0);
 
   useEffect(() => {
     if (!minerState) {
       setGlazeElapsedSeconds(0);
+      startTimeRef.current = 0;
       return;
     }
     const startTimeSeconds = Number(minerState.startTime);
-    const initialElapsed = Math.floor(Date.now() / 1000) - startTimeSeconds;
-    setGlazeElapsedSeconds(initialElapsed);
+    startTimeRef.current = startTimeSeconds;
+    setGlazeElapsedSeconds(Math.floor(Date.now() / 1000) - startTimeSeconds);
+  }, [currentEpochId, minerState?.startTime]);
+
+  // Single interval for elapsed time (no dependency on minerState)
+  useEffect(() => {
     const interval = setInterval(() => {
-      setGlazeElapsedSeconds(Math.floor(Date.now() / 1000) - startTimeSeconds);
+      if (startTimeRef.current > 0) {
+        setGlazeElapsedSeconds(Math.floor(Date.now() / 1000) - startTimeRef.current);
+      }
     }, 1_000);
     return () => clearInterval(interval);
-  }, [minerState]);
+  }, []); // Empty deps - interval never recreated
 
   const occupantDisplay = useMemo(() => {
     if (!minerState) {
@@ -337,8 +440,6 @@ export default function HomePage() {
   }, [address, claimedHandleParam, context?.user, minerState, neynarUser?.user]);
 
   const glazeRateDisplay = minerState ? formatTokenAmount(minerState.nextDps, DONUT_DECIMALS, 4) : "—";
-  const discountedPrice = minerState ? (minerState.price * 95n) / 100n : 0n;
-  const glazePriceDisplay = minerState ? `Ξ${formatEth(discountedPrice, discountedPrice === 0n ? 0 : 5)}` : "Ξ—";
   const glazedDisplay = minerState && interpolatedGlazed !== null ? formatTokenAmount(interpolatedGlazed, DONUT_DECIMALS, 2) : "—";
   const glazeTimeDisplay = minerState ? formatGlazeTime(glazeElapsedSeconds) : "—";
 
@@ -381,9 +482,13 @@ export default function HomePage() {
   const userDisplayName = context?.user?.displayName ?? context?.user?.username ?? "User";
   const userAvatarUrl = context?.user?.pfpUrl ?? null;
   const isGlazeDisabled = !minerState || isWriting || isConfirming || glazeResult !== null;
+  const isLoading = !minerState;
 
   return (
     <main className="flex min-h-screen w-full max-w-[430px] mx-auto flex-col bg-background font-mono text-foreground">
+      {/* Confetti celebration when becoming King */}
+      <Confetti trigger={showConfetti} />
+
       <div
         className="flex flex-1 flex-col px-4"
         style={{
@@ -398,7 +503,7 @@ export default function HomePage() {
             {context?.user && (
               <div className="flex items-center gap-2 rounded-full bg-secondary px-3 py-1.5">
                 <Avatar className="h-6 w-6">
-                  <AvatarImage src={userAvatarUrl || undefined} alt={userDisplayName} />
+                  <AvatarImage src={userAvatarUrl || undefined} alt={userDisplayName} loading="lazy" />
                   <AvatarFallback className="text-[10px]">{initialsFrom(userDisplayName)}</AvatarFallback>
                 </Avatar>
                 <span className="text-xs font-medium">{context.user.username || `fid:${context.user.fid}`}</span>
@@ -406,96 +511,106 @@ export default function HomePage() {
             )}
           </div>
 
-          {/* King Glazer Card */}
+          {/* King Glazer Hero Section */}
+          {isLoading ? (
+            // Skeleton loading state
+            <Card className="overflow-hidden">
+              <CardContent className="p-3">
+                <div className="flex justify-center mb-2">
+                  <Skeleton className="h-5 w-28" />
+                </div>
+                <div className="flex justify-center mb-2">
+                  <Skeleton className="h-16 w-16 rounded-full" />
+                </div>
+                <div className="text-center mb-1 space-y-1">
+                  <Skeleton className="h-4 w-28 mx-auto" />
+                  <Skeleton className="h-3 w-20 mx-auto" />
+                </div>
+                <Skeleton className="h-10 w-full rounded-lg mb-2" />
+                <div className="grid grid-cols-3 gap-2">
+                  <Skeleton className="h-8" />
+                  <Skeleton className="h-8" />
+                  <Skeleton className="h-8" />
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
           <Card className={cn(
-            "overflow-hidden",
+            "overflow-hidden relative animate-fade-in",
             occupantDisplay.isYou && "border-primary/50 animate-border-glow"
           )}>
-            <CardContent className="p-2">
-              <div className="flex items-center justify-between gap-2">
-                {/* Left: Profile */}
-                <div className="flex items-center gap-2 min-w-0 flex-1">
-                  <div
-                    className={cn(
-                      "cursor-pointer hover:opacity-80 transition-opacity",
-                      !neynarUser?.user?.fid && "cursor-default"
-                    )}
-                    onClick={neynarUser?.user?.fid ? handleViewKingGlazerProfile : undefined}
-                  >
-                    <Avatar className="h-9 w-9 ring-2 ring-primary/30">
-                      <AvatarImage src={occupantDisplay.avatarUrl || undefined} alt={occupantDisplay.primary} />
-                      <AvatarFallback>
-                        {minerState ? occupantFallbackInitials : <CircleUserRound className="h-5 w-5" />}
-                      </AvatarFallback>
-                    </Avatar>
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <Badge variant={occupantDisplay.isYou ? "default" : "secondary"} className="text-[10px]">
-                        King Glazer
-                      </Badge>
-                    </div>
-                    <div className="text-sm font-semibold truncate">{occupantDisplay.primary}</div>
-                    {occupantDisplay.secondary && (
-                      <div className="text-[10px] text-muted-foreground truncate">{occupantDisplay.secondary}</div>
-                    )}
+            {/* Subtle animated background */}
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10" />
+
+            <CardContent className="p-3 relative">
+              {/* Crown Badge + Time */}
+              <div className="flex items-center justify-center gap-3 mb-2">
+                <Badge
+                  variant={occupantDisplay.isYou ? "default" : "secondary"}
+                  className="text-xs px-2 py-0.5"
+                >
+                  👑 King Glazer
+                </Badge>
+                <span className="text-xs text-muted-foreground">⏱ {glazeTimeDisplay}</span>
+              </div>
+
+              {/* Avatar */}
+              <div className="flex justify-center mb-2">
+                <div
+                  className={cn(
+                    "cursor-pointer hover:scale-105 transition-transform",
+                    !neynarUser?.user?.fid && "cursor-default"
+                  )}
+                  onClick={neynarUser?.user?.fid ? handleViewKingGlazerProfile : undefined}
+                >
+                  <Avatar className="h-16 w-16 ring-2 ring-primary/30 shadow-lg">
+                    <AvatarImage src={occupantDisplay.avatarUrl || undefined} alt={occupantDisplay.primary} loading="lazy" />
+                    <AvatarFallback className="text-xl">
+                      {minerState ? occupantFallbackInitials : <CircleUserRound className="h-8 w-8" />}
+                    </AvatarFallback>
+                  </Avatar>
+                </div>
+              </div>
+
+              {/* Name */}
+              <div className="text-center mb-1">
+                <div className="text-base font-bold">{occupantDisplay.primary}</div>
+                {occupantDisplay.secondary && (
+                  <div className="text-xs text-muted-foreground">{occupantDisplay.secondary}</div>
+                )}
+              </div>
+
+              {/* Message */}
+              <div className="bg-secondary/50 rounded-lg p-2 mb-2">
+                <div className="text-center text-sm font-medium leading-relaxed break-words">
+                  "{renderMessageWithLinks(minerState?.uri?.trim() || "We Glaze The World")}"
+                </div>
+              </div>
+
+              {/* Stats Row - 3 columns now */}
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div>
+                  <div className="text-[9px] text-muted-foreground uppercase">Glazed</div>
+                  <div className="flex items-center justify-center">
+                    <span className="text-sm font-semibold">+</span>
+                    <TokenIcon address={TOKEN_ADDRESSES.donut} size={12} />
+                    <span className="text-sm font-semibold">{glazedDisplay}</span>
                   </div>
                 </div>
-
-                {/* Right: Stats */}
-                <div className="flex flex-col text-right shrink-0">
-                  <div className="text-[9px] text-muted-foreground">
-                    <span className="mr-1">TIME</span>
-                    <span className="font-medium text-foreground">{glazeTimeDisplay}</span>
-                  </div>
-                  <div className="text-[9px] text-muted-foreground flex items-center justify-end gap-0.5">
-                    <span>GLAZED</span>
-                    <TokenIcon address={TOKEN_ADDRESSES.donut} size={9} />
-                    <span className="font-medium text-foreground">{glazedDisplay}</span>
-                  </div>
-                  <div className="text-[9px] text-muted-foreground">
-                    <span className="mr-1">PNL</span>
-                    <span className="font-medium text-foreground">{pnlData.pnlEth}</span>
-                  </div>
-                  <div className={cn("text-[11px] font-bold", pnlData.isPositive ? "text-green-500" : "text-red-500")}>
+                <div>
+                  <div className="text-[9px] text-muted-foreground uppercase">PNL</div>
+                  <div className="text-sm font-semibold">{pnlData.pnlEth}</div>
+                </div>
+                <div>
+                  <div className="text-[9px] text-muted-foreground uppercase">Total</div>
+                  <div className="text-sm font-bold">
                     {pnlData.totalUsd}
                   </div>
                 </div>
               </div>
             </CardContent>
           </Card>
-
-          {/* Scrolling Message */}
-          <div className="relative overflow-hidden bg-secondary/30 rounded py-0.5">
-            <div className="flex animate-scroll whitespace-nowrap text-[10px] font-medium text-primary">
-              {Array.from({ length: 100 }).map((_, i) => (
-                <span key={i} className="inline-block px-6">
-                  {minerState?.uri?.trim() || "We Glaze The World"}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          {/* Video */}
-          <div className="relative overflow-hidden rounded-lg">
-            <video
-              ref={videoRef}
-              className="w-full object-cover"
-              autoPlay
-              loop
-              muted={isMuted}
-              playsInline
-              preload="auto"
-              src="/media/donut-loop.mp4"
-            />
-            <button
-              onClick={() => setIsMuted(!isMuted)}
-              className="absolute bottom-2 right-2 p-2 rounded-full bg-black/60 hover:bg-black/80 transition-colors"
-              aria-label={isMuted ? "Unmute" : "Mute"}
-            >
-              {isMuted ? <VolumeOff className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-            </button>
-          </div>
+          )}
 
           {/* Stats Grid */}
           <div className="grid grid-cols-2 gap-2">
@@ -504,39 +619,45 @@ export default function HomePage() {
                 <div className="text-[10px] font-medium uppercase text-muted-foreground">Glaze Rate</div>
                 <div className="flex items-center gap-1">
                   <TokenIcon address={TOKEN_ADDRESSES.donut} size={16} />
-                  <span className="text-base font-bold text-primary">{glazeRateDisplay}</span>
+                  <span className="text-base font-bold">{glazeRateDisplay}</span>
                   <span className="text-[9px] text-muted-foreground">/s</span>
                 </div>
                 <div className="text-[9px] text-muted-foreground">${glazeRateUsdValue}/s</div>
               </CardContent>
             </Card>
-            <Card className="border-primary/30">
+            <Card>
               <CardContent className="p-2">
-                <div className="text-[10px] font-medium uppercase text-muted-foreground">
-                  Glaze Price <span className="text-green-500">(5% Rebate)</span>
-                </div>
+                <div className="text-[10px] font-medium uppercase text-muted-foreground">Glaze Price</div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-base font-bold text-primary">{glazePriceDisplay}</span>
-                  <span className="text-xs text-muted-foreground line-through">
+                  <span className="text-base font-bold text-primary">
                     Ξ{minerState ? formatEth(minerState.price, minerState.price === 0n ? 0 : 5) : "—"}
                   </span>
                 </div>
                 <div className="text-[9px] text-muted-foreground">
-                  ${minerState ? (Number(formatEther(discountedPrice)) * ethUsdPrice).toFixed(2) : "0.00"}
+                  ${minerState ? (Number(formatEther(minerState.price)) * ethUsdPrice).toFixed(2) : "0.00"}
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Message Input */}
-          <Input
-            type="text"
-            value={customMessage}
-            onChange={(e) => setCustomMessage(e.target.value)}
-            placeholder="Add a message (optional)"
-            maxLength={100}
-            disabled={isGlazeDisabled}
-          />
+          {/* Message Input with character count */}
+          <div className="relative">
+            <Input
+              type="text"
+              value={customMessage}
+              onChange={(e) => setCustomMessage(e.target.value.slice(0, MAX_MESSAGE_LENGTH))}
+              placeholder="Add a message (optional)"
+              maxLength={MAX_MESSAGE_LENGTH}
+              disabled={isGlazeDisabled}
+              className="pr-12"
+            />
+            <span className={cn(
+              "absolute right-3 top-1/2 -translate-y-1/2 text-[10px]",
+              customMessage.length >= MAX_MESSAGE_LENGTH ? "text-destructive" : "text-muted-foreground"
+            )}>
+              {customMessage.length}/{MAX_MESSAGE_LENGTH}
+            </span>
+          </div>
 
           {/* Mine Button */}
           <Button
