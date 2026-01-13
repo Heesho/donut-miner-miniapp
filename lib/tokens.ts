@@ -21,6 +21,7 @@ export const TOKEN_ADDRESSES = {
   donutEthLp: "0xD1DbB2E56533C55C3A637D13C53aeEf65c5D5703" as Address,
   gDonut: "0xC78B6e362cB0f48b59E573dfe7C99d92153a16d3" as Address,
   qr: "0x2b5050f01d64fbb3e4ac44dc07f0732bfb5ecadf" as Address,
+  aero: "0x940181a94a35a4569e4529a3cdfb74e38fd98631" as Address,
 } as const;
 
 // Token metadata registry
@@ -81,6 +82,14 @@ export const TOKENS: Record<string, TokenInfo> = {
     decimals: 18,
     icon: "/tokens/qr.png",
     coingeckoId: "qr-coin",
+  },
+  [TOKEN_ADDRESSES.aero.toLowerCase()]: {
+    address: TOKEN_ADDRESSES.aero,
+    name: "Aerodrome",
+    symbol: "AERO",
+    decimals: 18,
+    icon: "https://coin-images.coingecko.com/coins/images/31745/small/token.png?1696530564",
+    coingeckoId: "aerodrome-finance",
   },
 };
 
