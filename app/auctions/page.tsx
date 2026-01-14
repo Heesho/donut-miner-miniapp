@@ -99,7 +99,8 @@ const getPaymentTokenUsdValue = (
   lpPrice: number,
   donutPrice: number,
   cbbtcPrice: number,
-  qrPrice: number
+  qrPrice: number,
+  aeroPrice: number
 ): number => {
   const tokenAmount = Number(formatUnits(amount, decimals));
   const tokenLower = paymentToken.toLowerCase();
@@ -108,6 +109,7 @@ const getPaymentTokenUsdValue = (
   if (tokenLower === TOKEN_ADDRESSES.donut.toLowerCase()) return tokenAmount * donutPrice;
   if (tokenLower === TOKEN_ADDRESSES.cbbtc.toLowerCase()) return tokenAmount * cbbtcPrice;
   if (tokenLower === TOKEN_ADDRESSES.qr.toLowerCase()) return tokenAmount * qrPrice;
+  if (tokenLower === TOKEN_ADDRESSES.aero.toLowerCase()) return tokenAmount * aeroPrice;
   return 0;
 };
 
@@ -124,6 +126,7 @@ export default function AuctionsPage() {
   const { data: donutPrice = 0 } = useTokenPrice(TOKEN_ADDRESSES.donut);
   const { data: cbbtcPrice = 0 } = useTokenPrice(TOKEN_ADDRESSES.cbbtc);
   const { data: qrPrice = 0 } = useTokenPrice(TOKEN_ADDRESSES.qr);
+  const { data: aeroPrice = 0 } = useTokenPrice(TOKEN_ADDRESSES.aero);
 
   const buyResultTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -202,7 +205,8 @@ export default function AuctionsPage() {
         lpTokenPrice,
         donutPrice,
         cbbtcPrice,
-        qrPrice
+        qrPrice,
+        aeroPrice
       );
       const receiveUsdA = Number(formatEther(a.totalPotentialRevenue)) * ethUsdPrice;
       const profitA = receiveUsdA - priceUsdA;
@@ -215,14 +219,15 @@ export default function AuctionsPage() {
         lpTokenPrice,
         donutPrice,
         cbbtcPrice,
-        qrPrice
+        qrPrice,
+        aeroPrice
       );
       const receiveUsdB = Number(formatEther(b.totalPotentialRevenue)) * ethUsdPrice;
       const profitB = receiveUsdB - priceUsdB;
 
       return profitB - profitA; // Descending order (most profitable first)
     });
-  }, [strategiesData, ethUsdPrice, lpTokenPrice, donutPrice, cbbtcPrice]);
+  }, [strategiesData, ethUsdPrice, lpTokenPrice, donutPrice, cbbtcPrice, qrPrice, aeroPrice]);
 
   useEffect(() => {
     if (sortedStrategies.length > 0 && !selectedStrategy) {
@@ -378,7 +383,8 @@ export default function AuctionsPage() {
                   lpTokenPrice,
                   donutPrice,
                   cbbtcPrice,
-                  qrPrice
+                  qrPrice,
+                  aeroPrice
                 );
                 const receiveUsd = Number(formatEther(strategy.totalPotentialRevenue)) * ethUsdPrice;
                 const isProfitable = priceUsd > 0 && receiveUsd > priceUsd;
@@ -452,7 +458,8 @@ export default function AuctionsPage() {
             lpTokenPrice,
             donutPrice,
             cbbtcPrice,
-            qrPrice
+            qrPrice,
+            aeroPrice
           );
           const selectedReceiveUsd = Number(formatEther(selectedStrategyData.totalPotentialRevenue)) * ethUsdPrice;
           const selectedIsProfitable = selectedPayUsd > 0 && selectedReceiveUsd > selectedPayUsd;
