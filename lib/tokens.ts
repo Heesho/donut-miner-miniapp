@@ -22,6 +22,7 @@ export const TOKEN_ADDRESSES = {
   gDonut: "0xC78B6e362cB0f48b59E573dfe7C99d92153a16d3" as Address,
   qr: "0x2b5050f01d64fbb3e4ac44dc07f0732bfb5ecadf" as Address,
   aero: "0x940181a94a35a4569e4529a3cdfb74e38fd98631" as Address,
+  clanker: "0x1bc0c42215582d5a085795f4badbac3ff36d1bcb" as Address,
 } as const;
 
 // Token metadata registry
@@ -90,6 +91,14 @@ export const TOKENS: Record<string, TokenInfo> = {
     decimals: 18,
     icon: "https://coin-images.coingecko.com/coins/images/31745/small/token.png?1696530564",
     coingeckoId: "aerodrome-finance",
+  },
+  [TOKEN_ADDRESSES.clanker.toLowerCase()]: {
+    address: TOKEN_ADDRESSES.clanker,
+    name: "Clanker",
+    symbol: "CLANKER",
+    decimals: 18,
+    icon: "https://coin-images.coingecko.com/coins/images/51440/small/CLANKER.png?1731232869",
+    coingeckoId: "tokenbot-2",
   },
 };
 
