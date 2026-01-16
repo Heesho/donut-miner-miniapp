@@ -330,29 +330,28 @@ export default function AuctionsPage() {
   return (
     <main className="flex min-h-screen w-full max-w-[430px] mx-auto flex-col bg-background font-mono text-foreground">
       <div
-        className="flex flex-1 flex-col px-4"
+        className="flex flex-col h-screen px-4"
         style={{
           paddingTop: "calc(env(safe-area-inset-top, 0px) + 16px)",
           paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 80px)",
         }}
       >
-        <div className="flex flex-1 flex-col gap-3 overflow-hidden">
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <h1 className="text-xl font-bold">Auctions</h1>
-            {context?.user && (
-              <div className="flex items-center gap-2 rounded-full bg-secondary px-3 py-1.5">
-                <Avatar className="h-6 w-6">
-                  <AvatarImage src={userAvatarUrl || undefined} alt={userDisplayName} />
-                  <AvatarFallback className="text-[10px]">{initialsFrom(userDisplayName)}</AvatarFallback>
-                </Avatar>
-                <span className="text-xs font-medium">{context.user.username || `fid:${context.user.fid}`}</span>
-              </div>
-            )}
-          </div>
+        {/* Header */}
+        <div className="flex items-center justify-between mb-3">
+          <h1 className="text-xl font-bold">Auctions</h1>
+          {context?.user && (
+            <div className="flex items-center gap-2 rounded-full bg-secondary px-3 py-1.5">
+              <Avatar className="h-6 w-6">
+                <AvatarImage src={userAvatarUrl || undefined} alt={userDisplayName} />
+                <AvatarFallback className="text-[10px]">{initialsFrom(userDisplayName)}</AvatarFallback>
+              </Avatar>
+              <span className="text-xs font-medium">{context.user.username || `fid:${context.user.fid}`}</span>
+            </div>
+          )}
+        </div>
 
-          {/* Auctions List */}
-          <div className="flex-1 overflow-y-auto scrollbar-hide space-y-2">
+        {/* Auctions List - Scrollable */}
+        <div className="flex-1 min-h-0 overflow-y-auto scrollbar-hide space-y-2 mb-3">
             {isLoading ? (
               <div className="space-y-2">
                 {[1, 2, 3].map((i) => (
@@ -445,7 +444,6 @@ export default function AuctionsPage() {
                 );
               })
             )}
-          </div>
         </div>
 
         {/* Buy Panel - Outside scroll area */}
