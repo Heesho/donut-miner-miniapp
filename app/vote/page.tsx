@@ -255,6 +255,7 @@ export default function VotePage() {
   const { data: cbbtcPrice = 0 } = useTokenPrice(TOKEN_ADDRESSES.cbbtc);
   const { data: qrPrice = 0 } = useTokenPrice(TOKEN_ADDRESSES.qr);
   const { data: aeroPrice = 0 } = useTokenPrice(TOKEN_ADDRESSES.aero);
+  const { data: bnkrPrice = 0 } = useTokenPrice(TOKEN_ADDRESSES.bnkr);
 
   const getTokenUsdPrice = useCallback((tokenAddress: Address): number => {
     const tokenLower = tokenAddress.toLowerCase();
@@ -265,8 +266,9 @@ export default function VotePage() {
     if (tokenLower === TOKEN_ADDRESSES.weth.toLowerCase()) return ethUsdPrice;
     if (tokenLower === TOKEN_ADDRESSES.qr.toLowerCase()) return qrPrice;
     if (tokenLower === TOKEN_ADDRESSES.aero.toLowerCase()) return aeroPrice;
+    if (tokenLower === TOKEN_ADDRESSES.bnkr.toLowerCase()) return bnkrPrice;
     return 0;
-  }, [ethUsdPrice, lpTokenPrice, donutPrice, cbbtcPrice, qrPrice, aeroPrice]);
+  }, [ethUsdPrice, lpTokenPrice, donutPrice, cbbtcPrice, qrPrice, aeroPrice, bnkrPrice]);
 
   const totalPendingRewards = useMemo(() => {
     if (!bribesData.length) return { rewards: [], totalUsd: 0 };

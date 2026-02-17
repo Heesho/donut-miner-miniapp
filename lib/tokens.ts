@@ -23,6 +23,7 @@ export const TOKEN_ADDRESSES = {
   qr: "0x2b5050f01d64fbb3e4ac44dc07f0732bfb5ecadf" as Address,
   aero: "0x940181a94a35a4569e4529a3cdfb74e38fd98631" as Address,
   clanker: "0x1bc0c42215582d5a085795f4badbac3ff36d1bcb" as Address,
+  bnkr: "0x22af33fe49fd1fa80c7149773dde5890d3c76f3b" as Address,
 } as const;
 
 // Token metadata registry
@@ -99,6 +100,14 @@ export const TOKENS: Record<string, TokenInfo> = {
     decimals: 18,
     icon: "https://coin-images.coingecko.com/coins/images/51440/small/CLANKER.png?1731232869",
     coingeckoId: "tokenbot-2",
+  },
+  [TOKEN_ADDRESSES.bnkr.toLowerCase()]: {
+    address: TOKEN_ADDRESSES.bnkr,
+    name: "BankrCoin",
+    symbol: "BNKR",
+    decimals: 18,
+    icon: "https://coin-images.coingecko.com/coins/images/52626/small/bankr-static.png?1736405365",
+    coingeckoId: "bankercoin-2",
   },
 };
 

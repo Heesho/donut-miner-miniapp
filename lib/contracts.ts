@@ -673,6 +673,9 @@ export const AERO_ADDRESS = "0x940181a94a35a4569e4529a3cdfb74e38fd98631";
 // CLANKER (Clanker) address on Base
 export const CLANKER_ADDRESS = "0x1bc0c42215582d5a085795f4badbac3ff36d1bcb";
 
+// BankrCoin address on Base
+export const BNKR_ADDRESS = "0x22af33fe49fd1fa80c7149773dde5890d3c76f3b";
+
 // Payment token symbols for display
 export const PAYMENT_TOKEN_SYMBOLS: Record<string, string> = {
   [CONTRACT_ADDRESSES.donut.toLowerCase()]: "DONUT",
@@ -682,4 +685,5 @@ export const PAYMENT_TOKEN_SYMBOLS: Record<string, string> = {
   [QR_ADDRESS.toLowerCase()]: "QR",
   [AERO_ADDRESS.toLowerCase()]: "AERO",
   [CLANKER_ADDRESS.toLowerCase()]: "CLANKER",
+  [BNKR_ADDRESS.toLowerCase()]: "BNKR",
 };
